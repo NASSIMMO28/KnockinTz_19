@@ -1,30 +1,51 @@
 const express = require("express");
 const router = express.Router();
 
-const propertyController = require("../controllers/propertyController");
-const { protect } = require("../middleware/authMiddleware");
-const { authorizeRoles } = require("../middleware/roleMiddleware");
-
 const {
   createProperty,
   getProperties,
   getProperty,
-  searchProperties
+  searchProperties,
+  updateProperty,
+  deleteProperty,
+  blockDates
 } = require("../controllers/propertyController");
 
-// ✅ CREATE PROPERTY (IMPORTANT)
-router.post("/", protect, authorizeRoles("host"), createProperty);
+const { protect } = require("../middleware/authMiddleware");
 
-// GET ALL
+// ================================
+// CREATE PROPERTY (HOST)
+// ================================
+router.post("/", protect, createProperty);
+
+// ================================
+// UPDATE PROPERTY
+// ================================
+router.put("/:id", protect, updateProperty);
+
+// ================================
+// DELETE PROPERTY (SOFT)
+// ================================
+router.delete("/:id", protect, deleteProperty);
+
+// ================================
+// BLOCK DATES (ADVANCED AVAILABILITY)
+// ================================
+router.post("/:id/block-dates", protect, blockDates);
+
+// ================================
+// GET ALL PROPERTIES
+// ================================
 router.get("/", getProperties);
 
-// SEARCH
+// ================================
+// SEARCH PROPERTIES
+// ================================
 router.get("/search", searchProperties);
 
-// 🔥 SEARCH + AVAILABILITY
-router.get("/search", propertyController.searchProperties);
-
-// GET ONE
+// ================================
+// GET SINGLE PROPERTY
+// ================================
 router.get("/:id", getProperty);
 
 module.exports = router;

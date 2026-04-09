@@ -1,16 +1,19 @@
 const express = require("express");
 const router = express.Router();
 
-const paymentController = require("../controllers/paymentController");
-const { protect } = require("../middleware/authMiddleware");
+const {
+  payWithCard,
+  payWithMobile,
+  paymentCallback
+} = require("../controllers/paymentController");
 
-// card
-router.post("/card", protect, paymentController.payWithCard);
+// CARD (Pesapal)
+router.post("/card", payWithCard);
 
-// mobile
-router.post("/mobile", protect, paymentController.payWithMobile);
+// MOBILE MONEY (Selcom)
+router.post("/mobile", payWithMobile);
 
-// callback (no auth)
-router.get("/callback", paymentController.paymentCallback);
+// CALLBACK (Pesapal)
+router.get("/callback", paymentCallback);
 
 module.exports = router;

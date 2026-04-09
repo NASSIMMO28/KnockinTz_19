@@ -34,7 +34,7 @@ const bookingSchema = new mongoose.Schema(
     // =====================
     status: {
       type: String,
-      enum: ["pending", "confirmed", "cancelled"],
+      enum: ["pending", "confirmed", "cancelled", "completed"],
       default: "pending"
     },
 
@@ -47,6 +47,16 @@ const bookingSchema = new mongoose.Schema(
       default: "pending"
     },
 
+    // =====================
+    // EXPIRY (VERY IMPORTANT)
+    // =====================
+    expiresAt: {
+      type: Date
+    },
+
+    // =====================
+    // PAYMENT INFO
+    // =====================
     paymentMethod: {
       type: String,
       enum: ["card", "mobile_money"]

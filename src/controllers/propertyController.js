@@ -56,7 +56,7 @@ exports.createProperty = async (req, res) => {
 exports.getProperties = async (req, res) => {
   try {
 
-    const properties = await Property.find({ isActive: true })
+    const properties = await Property.find({ isActive: { $ne: false } })
       .populate("host", "fullName email");
 
     res.json(properties);

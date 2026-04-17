@@ -19,7 +19,7 @@ exports.createProperty = async (req, res) => {
       amenities
     } = req.body;
 
-    const imagePaths = req.files?.map(file => file.filename) || [];
+    const imagePaths = req.files?.map(file => file.path) || [];
 
     const property = new Property({
       title,

@@ -99,43 +99,39 @@ exports.loginUser = async (req, res) => {
   }
 };
 exports.registerHost = async (req, res) => {
- try {
-  const { fullName, email, phone, password } = req.body;
+  try {
+    const { fullName, email, phone, password } = req.body;
 
-  // check if user exists
-  const userExists = await User.findOne({ email });
-  if (userExists) {
-    return res.status(400).json({ message: "User already exists" });
+    // check if user exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // ✅ hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const freeUntil = new Date();
+    freeUntil.setDate(freeUntil.getDate() + 30);
+
+    const user = new User({
+      fullName,
+      email,
+      phone,
+      password: hashedPassword, // ✅ now hashed
+      role: "host",
+      hostFreeUntil: freeUntil
+    });
+
+    await user.save();
+
+    res.json({
+      message: "Host registered successfully",
+      freeCommissionUntil: freeUntil
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  // ✅ hash password
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-
-  const freeUntil = new Date();
-  freeUntil.setDate(freeUntil.getDate() + 30);
-
-  const user = new User({
-   fullName,
-   email,
-   phone,
-   password: hashedPassword, // ✅ hashed
-   role: "host",
-   hostFreeUntil: freeUntil
-  });
-  await user.save();
-
-  res.json({
-   message: "Host registered successfully",
-   freeCommissionUntil: freeUntil
-  });
-
- } catch (error) {
-
-  res.status(500).json({
-   message: error.message
-  });
-
- }
-
 };

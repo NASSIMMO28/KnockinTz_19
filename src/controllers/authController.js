@@ -99,10 +99,18 @@ exports.loginUser = async (req, res) => {
   }
 };
 exports.registerHost = async (req, res) => {
-
  try {
-
   const { fullName, email, phone, password } = req.body;
+
+  // check if user exists
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    return res.status(400).json({ message: "User already exists" });
+  }
+
+  // ✅ hash password
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
 
   const freeUntil = new Date();
   freeUntil.setDate(freeUntil.getDate() + 30);
@@ -111,11 +119,10 @@ exports.registerHost = async (req, res) => {
    fullName,
    email,
    phone,
-   password,
+   password: hashedPassword, // ✅ hashed
    role: "host",
    hostFreeUntil: freeUntil
   });
-
   await user.save();
 
   res.json({

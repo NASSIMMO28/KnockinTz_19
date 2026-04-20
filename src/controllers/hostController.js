@@ -1,14 +1,12 @@
 const Booking = require("../models/Booking");
 const Property = require("../models/Property");
 
+// ================================
+// GET HOST DASHBOARD
+// ================================
 exports.getHostDashboard = async (req, res) => {
   try {
-    const hostId = req.user.id;
     const properties = await Property.find({ host: req.user.id }) || [];
-
-    // ✅ moved debug here
-    console.log("USER ID:", req.user.id);
-    console.log("PROPERTIES:", properties);
 
     if (!properties.length) {
       return res.json({
@@ -38,6 +36,41 @@ exports.getHostDashboard = async (req, res) => {
       totalCommission
     });
 
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ================================
+// GET MY PROPERTIES
+// ================================
+exports.getMyProperties = async (req, res) => {
+  try {
+    const properties = await Property.find({
+      host: req.user.id,
+      isActive: { $ne: false }
+    });
+    res.json({ properties });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ================================
+// DELETE MY PROPERTY
+// ================================
+exports.deleteProperty = async (req, res) => {
+  try {
+    const property = await Property.findById(req.params.id);
+    if (!property) {
+      return res.status(404).json({ message: "Property not found" });
+    }
+    if (property.host.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+    property.isActive = false;
+    await property.save();
+    res.json({ message: "Property deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

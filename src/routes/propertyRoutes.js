@@ -12,7 +12,7 @@ const {
 } = require("../controllers/propertyController");
 
 const { protect } = require("../middleware/authMiddleware");
-const upload = require("../middleware/upload"); // ✅ add this
+const { upload } = require("../middleware/upload"); // ✅ add this
 
 // ================================
 // CREATE PROPERTY (HOST)

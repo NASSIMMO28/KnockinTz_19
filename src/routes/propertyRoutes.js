@@ -35,14 +35,14 @@ router.delete("/:id", protect, deleteProperty);
 router.post("/:id/block-dates", protect, blockDates);
 
 // ================================
-// GET ALL PROPERTIES
-// ================================
-router.get("/", getProperties);
-
-// ================================
 // SEARCH PROPERTIES
 // ================================
 router.get("/search", searchProperties);
+
+// ================================
+// GET ALL PROPERTIES
+// ================================
+router.get("/", getProperties);
 
 // ================================
 // GET SINGLE PROPERTY

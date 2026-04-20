@@ -12,11 +12,12 @@ const {
 } = require("../controllers/propertyController");
 
 const { protect } = require("../middleware/authMiddleware");
+const upload = require("../middleware/upload"); // ✅ add this
 
 // ================================
 // CREATE PROPERTY (HOST)
 // ================================
-router.post("/", protect, createProperty);
+router.post("/", protect, upload.array("images", 10), createProperty); // ✅ added upload
 
 // ================================
 // UPDATE PROPERTY

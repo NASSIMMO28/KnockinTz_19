@@ -8,10 +8,13 @@ const cors = require("cors");
 const app = express();
 
 // ======================
-// 🔥 CORS (MUHIMU SANA)
+// 🔥 CORS
 // ======================
 app.use(cors({
-  origin: ["http://localhost:5173"], // frontend yako
+  origin: [
+    "http://localhost:5173",
+    "https://knockin-frontend-71vx.vercel.app/" // ✅ your Vercel URL
+  ],
   credentials: true
 }));
 

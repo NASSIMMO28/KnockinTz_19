@@ -3,34 +3,26 @@ const Property = require("../models/Property");
 
 exports.getHostDashboard = async (req, res) => {
   try {
-
-    // 🔍 debug user
-   console.log("USER ID:", req.user.id);
-   console.log("PROPERTIES:", properties);
-
     const hostId = req.user.id;
-
-    // ✅ pata properties za host
     const properties = await Property.find({ host: req.user.id }) || [];
 
-if (!properties.length) {
-  return res.json({
-    message: "No properties yet",
-    totalProperties: 0,
-    totalBookings: 0,
-    totalEarnings: 0,
-    totalCommission: 0
-  });
-}
+    // ✅ moved debug here
+    console.log("USER ID:", req.user.id);
+    console.log("PROPERTIES:", properties);
 
-const propertyIds = properties.map(p => p._id);
+    if (!properties.length) {
+      return res.json({
+        message: "No properties yet",
+        totalProperties: 0,
+        totalBookings: 0,
+        totalEarnings: 0,
+        totalCommission: 0
+      });
+    }
 
-    // ✅ pata bookings
-    const bookings = await Booking.find({
-      property: { $in: propertyIds }
-    });
+    const propertyIds = properties.map(p => p._id);
+    const bookings = await Booking.find({ property: { $in: propertyIds } });
 
-    // ✅ calculate
     let totalEarnings = 0;
     let totalCommission = 0;
 
@@ -39,7 +31,6 @@ const propertyIds = properties.map(p => p._id);
       totalCommission += b.totalPrice * 0.05;
     });
 
-    // ✅ response
     res.json({
       totalProperties: properties.length,
       totalBookings: bookings.length,
@@ -48,8 +39,6 @@ const propertyIds = properties.map(p => p._id);
     });
 
   } catch (error) {
-    res.status(500).json({
-      message: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };

@@ -13,11 +13,10 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://knockin-frontend-71vx.vercel.app/" // ✅ your Vercel URL
+    "https://knockin-frontend-71vx.vercel.app" // ← exact URL
   ],
   credentials: true
 }));
-
 // ======================
 // MIDDLEWARE
 // ======================

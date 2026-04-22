@@ -10,17 +10,10 @@ const {
   updateProfile
 } = require("../controllers/authController");
 
-// REGISTER GUEST
 router.post("/register-guest", registerGuest);
-
-// REGISTER HOST
 router.post("/register-host", registerHost);
-
-// LOGIN
 router.post("/login", loginUser);
-
-// PROFILE
-router.get("/profile", protect, getProfile);
-router.put("/profile", protect, updateProfile);
+router.get("/profile", protect, getProfile); // ✅ profile
+router.put("/profile", protect, updateProfile); // ✅ update
 
 module.exports = router;

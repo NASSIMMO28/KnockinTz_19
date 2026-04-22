@@ -13,8 +13,7 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://knockin-frontend-71vx.vercel.app",
-    "https://knockin-frontend.vercel.app" // ✅ add this
+    "https://knockin-frontend-71vx.vercel.app"
   ],
   credentials: true
 }));

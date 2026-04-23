@@ -13,7 +13,7 @@ const {
 router.post("/register-guest", registerGuest);
 router.post("/register-host", registerHost);
 router.post("/login", loginUser);
-router.get("/profile", protect, getProfile); // ✅ profile
-router.put("/profile", protect, updateProfile); // ✅ update
+router.get("/profile", protect, getProfile);
+router.put("/profile", protect, updateProfile);
 
 module.exports = router;

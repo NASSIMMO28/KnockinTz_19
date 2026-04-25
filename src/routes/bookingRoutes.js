@@ -50,3 +50,11 @@ router.post(
 );
 
 module.exports = router;
+// CHECK IN
+router.post("/:id/checkin", protect, bookingController.checkIn);
+
+// REFUND ESTIMATE
+router.get("/:id/refund-estimate", protect, bookingController.getRefundEstimate);
+
+// CANCEL WITH REFUND
+router.post("/:id/cancel-refund", protect, bookingController.cancelWithRefund);

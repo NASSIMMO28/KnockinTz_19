@@ -1,186 +1,121 @@
-const axios = require("axios");
-const crypto = require("crypto");
 const Booking = require("../models/Booking");
+const { submitOrder, getTransactionStatus } = require("../services/pesapalService");
 
-// ==============================
-// 🔐 GET TOKEN (REUSABLE)
-// ==============================
-const getToken = async () => {
-  const res = await axios.post(
-    `${process.env.PESAPAL_BASE_URL}/api/Auth/RequestToken`,
-    {
-      consumer_key: process.env.PESAPAL_CONSUMER_KEY,
-      consumer_secret: process.env.PESAPAL_CONSUMER_SECRET
-    }
-  );
-  return res.data.token;
-};
-
-
-// ==============================
-// 💳 PAY WITH CARD (PESAPAL)
-// ==============================
-exports.payWithCard = async (req, res) => {
+// ================================
+// INITIATE PAYMENT
+// ================================
+exports.initiatePayment = async (req, res) => {
   try {
-
     const { bookingId } = req.body;
 
-    const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findById(bookingId)
+      .populate("guest")
+      .populate("property");
 
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (booking.paymentStatus === "paid") {
+      return res.status(400).json({ message: "Already paid" });
     }
 
-    const token = await getToken();
+    const guest = booking.guest;
+    const nameParts = guest.fullName.split(" ");
 
-    const orderId = "BOOKING_" + booking._id;
+    const result = await submitOrder({
+      bookingId: booking._id.toString(),
+      amount: booking.grandTotal || booking.totalPrice,
+      email: guest.email,
+      phone: guest.phone || "255700000000",
+      firstName: nameParts[0],
+      lastName: nameParts[1] || nameParts[0]
+    });
 
-    const order = await axios.post(
-      `${process.env.PESAPAL_BASE_URL}/api/Transactions/SubmitOrderRequest`,
-      {
-        id: orderId,
-        currency: "TZS",
-        amount: booking.totalPrice,
-        description: "Property Booking",
-        callback_url: "https://KnockinTZ_19.up.railway.app/api/payment/callback",
-        notification_id: process.env.PESAPAL_NOTIFICATION_ID,
-        billing_address: {
-          email_address: "test@mail.com",
-          first_name: "Customer"
-        }
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-
-    // save payment info
-    booking.paymentMethod = "card";
-    booking.paymentReference = orderId;
+    // save pesapal order id
+    booking.pesapalOrderId = result.order_tracking_id;
     await booking.save();
 
     res.json({
-      link: order.data.redirect_url
+      message: "Payment initiated",
+      redirectUrl: result.redirect_url,
+      orderTrackingId: result.order_tracking_id
     });
 
   } catch (error) {
-    res.status(500).json({
-      message: error.response?.data || error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
-
-// ==============================
-// 📱 PAY WITH MOBILE (SELCOM)
-// ==============================
-exports.payWithMobile = async (req, res) => {
+// ================================
+// PESAPAL WEBHOOK
+// ================================
+exports.pesapalWebhook = async (req, res) => {
   try {
-
-    const { bookingId, phone } = req.body;
-
-    const booking = await Booking.findById(bookingId);
-
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    const orderId = "BOOKING_" + booking._id;
-
-    const dataString =
-      process.env.SELCOM_VENDOR_ID +
-      orderId +
-      booking.totalPrice +
-      "TZS";
-
-    const signature = crypto
-      .createHmac("sha256", process.env.SELCOM_API_SECRET)
-      .update(dataString)
-      .digest("hex");
-
-    const response = await axios.post(
-      "https://apigw.selcommobile.com/v1/checkout/create-order",
-      {
-        vendor: process.env.SELCOM_VENDOR_ID,
-        order_id: orderId,
-        amount: booking.totalPrice,
-        currency: "TZS",
-        buyer_phone: phone,
-        buyer_email: "test@mail.com"
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.SELCOM_API_KEY}`,
-          signature: signature
-        }
-      }
-    );
-
-    booking.paymentMethod = "mobile_money";
-    booking.paymentReference = orderId;
-    await booking.save();
-
-    res.json({
-      message: "Payment sent to phone",
-      data: response.data
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      message: error.response?.data || error.message
-    });
-  }
-};
-
-
-// ==============================
-// 🔁 CALLBACK (FIXED)
-// ==============================
-exports.paymentCallback = async (req, res) => {
-  try {
-
     const { OrderTrackingId, OrderMerchantReference } = req.query;
 
-    const bookingId = OrderMerchantReference.replace("BOOKING_", "");
-
-    const booking = await Booking.findById(bookingId);
-
-    if (!booking) {
-      return res.send("Booking not found");
+    if (!OrderTrackingId) {
+      return res.status(400).json({ message: "Missing tracking ID" });
     }
 
-    // 🔐 VERIFY PAYMENT STATUS
-    const token = await getToken();
+    // verify payment status
+    const status = await getTransactionStatus(OrderTrackingId);
 
-    const statusRes = await axios.get(
-      `${process.env.PESAPAL_BASE_URL}/api/Transactions/GetTransactionStatus?orderTrackingId=${OrderTrackingId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
+    const booking = await Booking.findById(OrderMerchantReference);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
 
-    const paymentStatus = statusRes.data.payment_status_description;
+    // idempotency check
+    if (booking.paymentStatus === "paid") {
+      return res.json({ message: "Already processed" });
+    }
 
-    if (paymentStatus === "Completed") {
-      booking.status = "confirmed";
+    if (status.payment_status_description === "Completed") {
       booking.paymentStatus = "paid";
-    } else {
-      booking.status = "cancelled";
+      booking.status = "confirmed";
+      booking.pesapalTrackingId = OrderTrackingId;
+      booking.transactionId = status.confirmation_code;
+      booking.paymentMethod = "pesapal";
+      await booking.save();
+
+      console.log(`✅ Payment confirmed for booking ${booking._id}`);
+    } else if (status.payment_status_description === "Failed") {
       booking.paymentStatus = "failed";
+      await booking.save();
     }
 
-    booking.paymentReference = OrderTrackingId;
-
-    await booking.save();
-
-    res.send("Payment processed");
+    res.status(200).json({ message: "Webhook processed" });
 
   } catch (error) {
-    console.log(error.response?.data || error.message);
-    res.send("Error processing payment");
+    console.error("Webhook error:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ================================
+// VERIFY PAYMENT (FRONTEND CALLBACK)
+// ================================
+exports.verifyPayment = async (req, res) => {
+  try {
+    const { OrderTrackingId, OrderMerchantReference } = req.query;
+
+    const status = await getTransactionStatus(OrderTrackingId);
+    const booking = await Booking.findById(OrderMerchantReference);
+
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    if (status.payment_status_description === "Completed" && booking.paymentStatus !== "paid") {
+      booking.paymentStatus = "paid";
+      booking.status = "confirmed";
+      booking.pesapalTrackingId = OrderTrackingId;
+      booking.transactionId = status.confirmation_code;
+      booking.paymentMethod = "pesapal";
+      await booking.save();
+    }
+
+    res.json({
+      paymentStatus: booking.paymentStatus,
+      bookingStatus: booking.status,
+      booking
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

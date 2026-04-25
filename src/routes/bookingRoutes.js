@@ -5,7 +5,7 @@ const bookingController = require("../controllers/bookingController");
 const { protect } = require("../middleware/authMiddleware");
 
 // ================================
-// CREATE BOOKING (any logged user)
+// CREATE BOOKING
 // ================================
 router.post("/", protect, bookingController.createBooking);
 
@@ -20,41 +20,38 @@ router.get("/my", protect, bookingController.getMyBookings);
 router.get("/host", protect, bookingController.getHostBookings);
 
 // ================================
-// CANCEL BOOKING
+// CHECK AVAILABILITY
 // ================================
-router.put("/:id/cancel", protect, bookingController.cancelBooking);
+router.post("/check-availability", bookingController.checkAvailability);
 
 // ================================
 // PROPERTY BOOKINGS (host view)
 // ================================
-router.get(
-  "/property/:propertyId",
-  protect,
-  bookingController.getPropertyBookings
-);
+router.get("/property/:propertyId", protect, bookingController.getPropertyBookings);
 
 // ================================
 // BOOKED DATES (calendar)
 // ================================
-router.get(
-  "/property/:propertyId/booked-dates",
-  bookingController.getBookedDates
-);
+router.get("/property/:propertyId/booked-dates", bookingController.getBookedDates);
 
 // ================================
-// CHECK AVAILABILITY
-// ================================
-router.post(
-  "/check-availability",
-  bookingController.checkAvailability
-);
-
-module.exports = router;
 // CHECK IN
+// ================================
 router.post("/:id/checkin", protect, bookingController.checkIn);
 
+// ================================
 // REFUND ESTIMATE
+// ================================
 router.get("/:id/refund-estimate", protect, bookingController.getRefundEstimate);
 
+// ================================
 // CANCEL WITH REFUND
+// ================================
 router.post("/:id/cancel-refund", protect, bookingController.cancelWithRefund);
+
+// ================================
+// CANCEL BOOKING (old route kept)
+// ================================
+router.put("/:id/cancel", protect, bookingController.cancelBooking);
+
+module.exports = router;

@@ -63,32 +63,27 @@ const existingBooking = await Booking.findOne({
     }
 
     // price calculation
-    const price = property.pricePerNight * nights;
+const price = property.pricePerNight * nights;
 
-    // guest commission (5%)
-    const guestFee = price * 0.05;
+// ✅ 5% service fee from guest
+const guestFee = price * 0.05;
+const totalPrice = price;
+const grandTotal = price + guestFee; // guest pays this
 
-    // host commission
-    const host = await User.findById(property.host);
+// ✅ 5% commission from host (deducted at payout)
+const hostFee = price * 0.05;
+const hostPayout = price - hostFee; // host receives this
 
-    let hostFee = 0;
-    const today = new Date();
-
-    if (host.hostFreeUntil && today > host.hostFreeUntil) {
-      hostFee = price * 0.05;
-    }
-
-    const totalPrice = price + guestFee;
-
-    // create booking
-    const booking = new Booking({
+const booking = new Booking({
   property: propertyId,
   guest: req.user.id,
   checkIn: checkInDate,
   checkOut: checkOutDate,
-  totalPrice,
-  status: "pending",        // muhimu
-  paymentStatus: "pending"  // muhimu
+  totalPrice: price,           // base price
+  serviceFee: guestFee,        // 5% guest fee
+  grandTotal: grandTotal,      // what guest pays
+  status: "pending",
+  paymentStatus: "pending"
 });
 
 if (property.host.toString() === req.user.id) {
@@ -389,6 +384,75 @@ exports.paymentFailed = async (req, res) => {
       booking
     });
 
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+const { calculateRefund, processRefund } = require("../services/refundService");
+const { scheduleAutoPayout } = require("../services/payoutService");
+
+// ================================
+// CHECK IN (GUEST ACTION)
+// ================================
+exports.checkIn = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (booking.guest.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+    if (booking.status !== "confirmed") {
+      return res.status(400).json({ message: "Booking must be confirmed before check-in" });
+    }
+    booking.status = "checked_in";
+    booking.checkedInAt = new Date();
+    booking.checkedInBy = "guest";
+    await booking.save();
+
+    // schedule auto payout after 24 hours
+    scheduleAutoPayout(booking._id.toString(), 24);
+
+    res.json({ message: "Checked in successfully", booking });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ================================
+// GET REFUND ESTIMATE
+// ================================
+exports.getRefundEstimate = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (booking.guest.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+    const estimate = calculateRefund(booking);
+    res.json(estimate);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ================================
+// CANCEL WITH REFUND
+// ================================
+exports.cancelWithRefund = async (req, res) => {
+  try {
+    const result = await processRefund(req.params.id, "guest");
+    if (result.manual) {
+      return res.json({
+        message: "Booking cancelled — refund under manual review",
+        ...result
+      });
+    }
+    res.json({
+      message: result.refundAmount > 0
+        ? `Booking cancelled — TZS ${result.refundAmount.toLocaleString()} will be refunded`
+        : `Booking cancelled — ${result.reason}`,
+      ...result
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

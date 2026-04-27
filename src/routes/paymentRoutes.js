@@ -13,28 +13,37 @@ router.post("/initiate", protect, initiatePayment);
 // pesapal webhook (no auth — called by Pesapal)
 router.get("/pesapal-webhook", pesapalWebhook);
 
-// verify payment after redirect
-router.get("/verify", protect, verifyPayment);
-
 router.get("/register-ipn", async (req, res) => {
   try {
-    const { getToken, registerIPN } = require("../services/pesapalService");
+    const { getToken } = require("../services/pesapalService");
+    const axios = require("axios");
 
-    // test token first
+    // step 1 - get token
     const token = await getToken();
-    console.log("TOKEN:", token);
 
-    const ipnId = await registerIPN(token);
-    res.json({ ipnId, token });
+    // step 2 - register IPN manually to see full error
+    const response = await axios.post(
+      `${process.env.PESAPAL_BASE_URL}/api/URLSetup/RegisterIPN`,
+      {
+        url: `https://knockintz-19.onrender.com/api/payment/pesapal-webhook`,
+        ipn_notification_type: "GET"
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        }
+      }
+    );
+
+    res.json({ success: true, data: response.data, token });
+
   } catch (err) {
     res.status(500).json({
       message: err.message,
-      details: err.response?.data || "no details",
-      credentials: {
-        key: process.env.PESAPAL_CONSUMER_KEY ? "SET" : "MISSING",
-        secret: process.env.PESAPAL_CONSUMER_SECRET ? "SET" : "MISSING",
-        url: process.env.PESAPAL_BASE_URL ? "SET" : "MISSING"
-      }
+      details: err.response?.data,
+      token_used: err.config?.headers?.Authorization
     });
   }
 });

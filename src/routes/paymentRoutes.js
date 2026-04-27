@@ -15,35 +15,41 @@ router.get("/pesapal-webhook", pesapalWebhook);
 
 router.get("/register-ipn", async (req, res) => {
   try {
-    const { getToken } = require("../services/pesapalService");
     const axios = require("axios");
 
-    // step 1 - get token
-    const token = await getToken();
-
-    // step 2 - register IPN manually to see full error
-    const response = await axios.post(
-      `${process.env.PESAPAL_BASE_URL}/api/URLSetup/RegisterIPN`,
+    // test token directly
+    const tokenRes = await axios.post(
+      `${process.env.PESAPAL_BASE_URL}/api/Auth/RequestToken`,
       {
-        url: `https://knockintz-19.onrender.com/api/payment/pesapal-webhook`,
-        ipn_notification_type: "GET"
+        consumer_key: process.env.PESAPAL_CONSUMER_KEY,
+        consumer_secret: process.env.PESAPAL_CONSUMER_SECRET
       },
       {
         headers: {
-          "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
           "Accept": "application/json"
         }
       }
     );
 
-    res.json({ success: true, data: response.data, token });
+    res.json({
+      success: true,
+      tokenResponse: tokenRes.data,
+      credentials: {
+        key: process.env.PESAPAL_CONSUMER_KEY,
+        url: process.env.PESAPAL_BASE_URL
+      }
+    });
 
   } catch (err) {
     res.status(500).json({
       message: err.message,
       details: err.response?.data,
-      token_used: err.config?.headers?.Authorization
+      credentials: {
+        key: process.env.PESAPAL_CONSUMER_KEY,
+        secret: process.env.PESAPAL_CONSUMER_SECRET,
+        url: process.env.PESAPAL_BASE_URL
+      }
     });
   }
 });

@@ -16,8 +16,8 @@ router.get("/pesapal-webhook", pesapalWebhook);
 // verify payment after redirect
 router.get("/verify", protect, verifyPayment);
 
-// Add to paymentRoutes.js temporarily
-router.get("/register-ipn", protect, async (req, res) => {
+// ✅ no protect — one time use only
+router.get("/register-ipn", async (req, res) => {
   try {
     const { getToken, registerIPN } = require("../services/pesapalService");
     const token = await getToken();

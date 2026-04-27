@@ -13,10 +13,13 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://knockin-frontend-71vx.vercel.app"
+    "http://localhost:5174", // admin dev
+    "https://knockin-frontend-71vx.vercel.app",
+    "https://knockin-admin.vercel.app" // admin production
   ],
   credentials: true
 }));
+
 // ======================
 // MIDDLEWARE
 // ======================
@@ -38,6 +41,7 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const wishlistRoutes = require("./routes/wishlistRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/payment", paymentRoutes);
@@ -47,6 +51,7 @@ app.use("/api/properties", propertyRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/host", hostRoutes);
+app.use("/api/admin", adminRoutes);
 
 // ======================
 // TEST ROUTE

@@ -8,12 +8,25 @@ const CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
 // GET ACCESS TOKEN
 // ================================
 const getToken = async () => {
-  const res = await axios.post(`${BASE_URL}/api/Auth/RequestToken`, {
-    consumer_key: CONSUMER_KEY,
-    consumer_secret: CONSUMER_SECRET
-  }, {
-    headers: { "Content-Type": "application/json", "Accept": "application/json" }
-  });
+  const res = await axios.post(
+    `${BASE_URL}/api/Auth/RequestToken`,
+    {
+      consumer_key: CONSUMER_KEY,
+      consumer_secret: CONSUMER_SECRET
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      }
+    }
+  );
+
+  // ✅ check for error in response
+  if (res.data.status === "500") {
+    throw new Error(`Pesapal auth error: ${res.data.error?.code}`);
+  }
+
   return res.data.token;
 };
 

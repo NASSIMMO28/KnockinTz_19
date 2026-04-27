@@ -16,7 +16,6 @@ router.get("/pesapal-webhook", pesapalWebhook);
 // verify payment after redirect
 router.get("/verify", protect, verifyPayment);
 
-// ✅ no protect — one time use only
 router.get("/register-ipn", async (req, res) => {
   try {
     const { getToken, registerIPN } = require("../services/pesapalService");
@@ -24,7 +23,10 @@ router.get("/register-ipn", async (req, res) => {
     const ipnId = await registerIPN(token);
     res.json({ ipnId });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ 
+      message: err.message,
+      details: err.response?.data || "no details"
+    });
   }
 });
 

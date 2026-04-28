@@ -15,7 +15,7 @@ app.use(cors({
     "http://localhost:5173",
     "http://localhost:5174",
     "https://knockin-frontend-71vx.vercel.app",
-    "https://knockin-admin.vercel.app" // ← your actual admin URL
+    "https://knockin-admin-hw7x.vercel.app/" // ✅ your actual admin URL
   ],
   credentials: true
 }));

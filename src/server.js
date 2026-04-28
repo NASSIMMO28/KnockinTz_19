@@ -13,9 +13,9 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "http://localhost:5174", // admin dev
+    "http://localhost:5174",
     "https://knockin-frontend-71vx.vercel.app",
-    "https://knockin-admin.vercel.app" // admin production
+    "https://knockin-admin.vercel.app" // ← your actual admin URL
   ],
   credentials: true
 }));

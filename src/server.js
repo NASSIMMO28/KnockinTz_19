@@ -11,12 +11,21 @@ const app = express();
 // 🔥 CORS
 // ======================
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://knockin-frontend-71vx.vercel.app",
-    "https://knockin-admin-hw7x.vercel.app" // ✅ your actual admin URL
-  ],
+  origin: function(origin, callback) {
+    const allowed = [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:53100", // flutter web
+      "https://knockin-frontend-71vx.vercel.app",
+      "https://knockin-admin-hw7x.vercel.app"
+    ];
+    // allow requests with no origin (mobile apps, curl)
+    if (!origin) return callback(null, true);
+    // allow any localhost port
+    if (origin.startsWith("http://localhost")) return callback(null, true);
+    if (allowed.includes(origin)) return callback(null, true);
+    callback(new Error("Not allowed by CORS"));
+  },
   credentials: true
 }));
 

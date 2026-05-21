@@ -17,39 +17,32 @@ router.get("/register-ipn", async (req, res) => {
   try {
     const axios = require("axios");
 
-    // test token directly
+    // ✅ read directly from env at request time
+    const BASE_URL = process.env.PESAPAL_BASE_URL;
+    const CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY;
+    const CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
+
+    // show what Render actually has
+    console.log("BASE_URL:", BASE_URL);
+    console.log("KEY:", CONSUMER_KEY);
+
+    // get token
     const tokenRes = await axios.post(
-      `${process.env.PESAPAL_BASE_URL}/api/Auth/RequestToken`,
-      {
-        consumer_key: process.env.PESAPAL_CONSUMER_KEY,
-        consumer_secret: process.env.PESAPAL_CONSUMER_SECRET
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        }
-      }
+      `${BASE_URL}/api/Auth/RequestToken`,
+      { consumer_key: CONSUMER_KEY, consumer_secret: CONSUMER_SECRET },
+      { headers: { "Content-Type": "application/json", "Accept": "application/json" } }
     );
 
     res.json({
       success: true,
       tokenResponse: tokenRes.data,
-      credentials: {
-        key: process.env.PESAPAL_CONSUMER_KEY,
-        url: process.env.PESAPAL_BASE_URL
-      }
+      credentials: { key: CONSUMER_KEY, url: BASE_URL }
     });
 
   } catch (err) {
     res.status(500).json({
       message: err.message,
-      details: err.response?.data,
-      credentials: {
-        key: process.env.PESAPAL_CONSUMER_KEY,
-        secret: process.env.PESAPAL_CONSUMER_SECRET,
-        url: process.env.PESAPAL_BASE_URL
-      }
+      details: err.response?.data
     });
   }
 });

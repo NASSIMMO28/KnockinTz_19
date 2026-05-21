@@ -2,22 +2,14 @@ const axios = require("axios");
 
 // ✅ Read env variables at REQUEST time not module load time
 const getToken = async () => {
-  const BASE_URL = process.env.PESAPAL_BASE_URL;
+  const BASE_URL = "https://pay.pesapal.com";
   const CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY;
   const CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
 
   const res = await axios.post(
-    `${BASE_URL}/api/Auth/RequestToken`,
-    {
-      consumer_key: CONSUMER_KEY,
-      consumer_secret: CONSUMER_SECRET
-    },
-    {
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      }
-    }
+    `${BASE_URL}/v3/api/Auth/RequestToken`,
+    { consumer_key: CONSUMER_KEY, consumer_secret: CONSUMER_SECRET },
+    { headers: { "Content-Type": "application/json", "Accept": "application/json" } }
   );
 
   if (res.data.status === "500") {

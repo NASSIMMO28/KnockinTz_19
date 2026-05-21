@@ -1,13 +1,11 @@
 const axios = require("axios");
 
-const BASE_URL = process.env.PESAPAL_BASE_URL;
-const CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY;
-const CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
-
-// ================================
-// GET ACCESS TOKEN
-// ================================
+// ✅ Read env variables at REQUEST time not module load time
 const getToken = async () => {
+  const BASE_URL = process.env.PESAPAL_BASE_URL;
+  const CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY;
+  const CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
+
   const res = await axios.post(
     `${BASE_URL}/api/Auth/RequestToken`,
     {
@@ -22,14 +20,11 @@ const getToken = async () => {
     }
   );
 
-  // ✅ check for error in response
   if (res.data.status === "500") {
     throw new Error(`Pesapal auth error: ${res.data.error?.code}`);
   }
-
   return res.data.token;
 };
-
 // ================================
 // REGISTER IPN
 // ================================

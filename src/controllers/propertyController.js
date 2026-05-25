@@ -131,16 +131,20 @@ exports.updateProperty = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // ✅ upload new images to Cloudinary if provided
-    let imagePaths = property.images; // keep existing images by default
+    // ✅ keep existing images host didn't remove
+    let imagePaths = [];
+    if (req.body.existingImages) {
+      imagePaths = Array.isArray(req.body.existingImages)
+        ? req.body.existingImages
+        : [req.body.existingImages];
+    }
+
+    // ✅ upload new images
     if (req.files && req.files.length > 0) {
-      const newImages = [];
       for (const file of req.files) {
         const url = await uploadToCloudinary(file.buffer);
-        newImages.push(url);
+        imagePaths.push(url);
       }
-      // ✅ append new images to existing ones
-      imagePaths = [...property.images, ...newImages];
     }
 
     const updated = await Property.findByIdAndUpdate(

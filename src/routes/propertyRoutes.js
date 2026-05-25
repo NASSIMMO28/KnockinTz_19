@@ -23,6 +23,7 @@ router.post("/", protect, upload.array("images", 10), createProperty); // ✅ ad
 // UPDATE PROPERTY
 // ================================
 router.put("/:id", protect, updateProperty);
+router.put("/:id", protect, upload.array("images", 10), updateProperty);
 
 // ================================
 // DELETE PROPERTY (SOFT)

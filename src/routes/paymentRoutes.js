@@ -7,51 +7,50 @@ const {
   verifyPayment
 } = require("../controllers/paymentController");
 
-// initiate payment
+// ================================
+// INITIATE PAYMENT
+// ================================
 router.post("/initiate", protect, initiatePayment);
 
-// pesapal webhook (no auth — called by Pesapal)
+// ================================
+// PESAPAL WEBHOOK (no auth)
+// ================================
 router.get("/pesapal-webhook", pesapalWebhook);
 
-router.get("/debug-env", (req, res) => {
-  res.json({
-    BASE_URL: process.env.PESAPAL_BASE_URL,
-    KEY_FIRST_5: process.env.PESAPAL_CONSUMER_KEY?.substring(0, 5),
-  });
-});
+// ================================
+// VERIFY PAYMENT
+// ================================
+router.get("/verify", protect, verifyPayment);
 
+// ================================
+// REGISTER LIVE IPN
+// ================================
 router.get("/register-ipn", async (req, res) => {
   try {
-    const axios = require("axios");
-
-    // ✅ read directly from env at request time
-    const BASE_URL = process.env.PESAPAL_BASE_URL;
-    const CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY;
-    const CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
-
-    // show what Render actually has
-    console.log("BASE_URL:", BASE_URL);
-    console.log("KEY:", CONSUMER_KEY);
-
-    // get token
-    const tokenRes = await axios.post(
-      `${BASE_URL}/api/Auth/RequestToken`,
-      { consumer_key: CONSUMER_KEY, consumer_secret: CONSUMER_SECRET },
-      { headers: { "Content-Type": "application/json", "Accept": "application/json" } }
-    );
-
+    const { getToken, registerIPN } = require("../services/pesapalService");
+    const token = await getToken();
+    const ipnId = await registerIPN(token);
     res.json({
       success: true,
-      tokenResponse: tokenRes.data,
-      credentials: { key: CONSUMER_KEY, url: BASE_URL }
+      ipnId,
+      message: "✅ IPN registered! Save this ID in PESAPAL_NOTIFICATION_ID on Render"
     });
-
   } catch (err) {
     res.status(500).json({
       message: err.message,
       details: err.response?.data
     });
   }
+});
+
+// ================================
+// DEBUG ENV (remove in production)
+// ================================
+router.get("/debug-env", (req, res) => {
+  res.json({
+    BASE_URL: process.env.PESAPAL_BASE_URL,
+    KEY_FIRST_5: process.env.PESAPAL_CONSUMER_KEY?.substring(0, 5),
+  });
 });
 
 module.exports = router;

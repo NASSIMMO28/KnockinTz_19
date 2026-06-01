@@ -1,6 +1,5 @@
 const axios = require("axios");
 
-// ✅ Read env variables at REQUEST time not module load time
 const getToken = async () => {
   const BASE_URL = "https://pay.pesapal.com";
   const CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY;
@@ -17,63 +16,60 @@ const getToken = async () => {
   }
   return res.data.token;
 };
-// ================================
-// REGISTER IPN
-// ================================
+
 const registerIPN = async (token) => {
-  const res = await axios.post(`${BASE_URL}/api/URLSetup/RegisterIPN`, {
-    url: `${process.env.BACKEND_URL}/api/payment/pesapal-webhook`,
-    ipn_notification_type: "GET"
-  }, {
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-      "Accept": "application/json"
+  const res = await axios.post(
+    `https://pay.pesapal.com/v3/api/URLSetup/RegisterIPN`,
+    {
+      url: `${process.env.BACKEND_URL}/api/payment/pesapal-webhook`,
+      ipn_notification_type: "GET"
+    },
+    {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      }
     }
-  });
+  );
   return res.data.ipn_id;
 };
 
-// ================================
-// SUBMIT ORDER
-// ================================
 const submitOrder = async ({ bookingId, amount, email, phone, firstName, lastName }) => {
   const token = await getToken();
-
   const notificationId = process.env.PESAPAL_NOTIFICATION_ID;
 
-  const res = await axios.post(`${BASE_URL}/api/Transactions/SubmitOrderRequest`, {
-    id: bookingId,
-    currency: "TZS",
-    amount,
-    description: `Knockin Booking #${bookingId}`,
-    callback_url: `${process.env.FRONTEND_URL}/booking/callback`,
-    notification_id: notificationId,
-    billing_address: {
-      email_address: email,
-      phone_number: phone,
-      first_name: firstName,
-      last_name: lastName
+  const res = await axios.post(
+    `https://pay.pesapal.com/v3/api/Transactions/SubmitOrderRequest`,
+    {
+      id: bookingId,
+      currency: "TZS",
+      amount,
+      description: `Knockin Booking #${bookingId}`,
+      callback_url: `${process.env.FRONTEND_URL}/booking/callback`,
+      notification_id: notificationId,
+      billing_address: {
+        email_address: email,
+        phone_number: phone,
+        first_name: firstName,
+        last_name: lastName
+      }
+    },
+    {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      }
     }
-  }, {
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    }
-  });
-
+  );
   return res.data;
 };
 
-// ================================
-// GET TRANSACTION STATUS
-// ================================
 const getTransactionStatus = async (orderTrackingId) => {
   const token = await getToken();
-
   const res = await axios.get(
-    `${BASE_URL}/api/Transactions/GetTransactionStatus?orderTrackingId=${orderTrackingId}`,
+    `https://pay.pesapal.com/v3/api/Transactions/GetTransactionStatus?orderTrackingId=${orderTrackingId}`,
     {
       headers: {
         "Authorization": `Bearer ${token}`,

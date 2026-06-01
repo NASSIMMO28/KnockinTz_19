@@ -13,6 +13,13 @@ router.post("/initiate", protect, initiatePayment);
 // pesapal webhook (no auth — called by Pesapal)
 router.get("/pesapal-webhook", pesapalWebhook);
 
+router.get("/debug-env", (req, res) => {
+  res.json({
+    BASE_URL: process.env.PESAPAL_BASE_URL,
+    KEY_FIRST_5: process.env.PESAPAL_CONSUMER_KEY?.substring(0, 5),
+  });
+});
+
 router.get("/register-ipn", async (req, res) => {
   try {
     const axios = require("axios");

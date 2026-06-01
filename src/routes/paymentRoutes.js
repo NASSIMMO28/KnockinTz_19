@@ -50,6 +50,7 @@ router.get("/debug-env", (req, res) => {
   res.json({
     BASE_URL: process.env.PESAPAL_BASE_URL,
     KEY_FIRST_5: process.env.PESAPAL_CONSUMER_KEY?.substring(0, 5),
+    api_secret_set: !!process.env.CLOUDINARY_API_SECRET,
   });
 });
 

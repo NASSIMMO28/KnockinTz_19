@@ -13,13 +13,20 @@ exports.createProperty = async (req, res) => {
       bathrooms, amenities, latitude, longitude
     } = req.body;
 
-    // ✅ upload images to Cloudinary
+    console.log("FILES RECEIVED:", req.files?.length ?? 0);
+    console.log("BODY KEYS:", Object.keys(req.body));
+
+    // upload images to Cloudinary
     const imagePaths = [];
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
+        console.log("Uploading:", file.originalname, file.size);
         const url = await uploadToCloudinary(file.buffer);
+        console.log("Cloudinary URL:", url);
         imagePaths.push(url);
       }
+    } else {
+      console.log("NO FILES RECEIVED!");
     }
 
     const property = new Property({
@@ -35,6 +42,7 @@ exports.createProperty = async (req, res) => {
     res.json({ message: "Property created successfully", property });
 
   } catch (error) {
+    console.log("CREATE PROPERTY ERROR:", error.message);
     res.status(500).json({ message: error.message });
   }
 };
@@ -131,7 +139,7 @@ exports.updateProperty = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // ✅ keep existing images host didn't remove
+    // keep existing images host didn't remove
     let imagePaths = [];
     if (req.body.existingImages) {
       imagePaths = Array.isArray(req.body.existingImages)
@@ -139,9 +147,10 @@ exports.updateProperty = async (req, res) => {
         : [req.body.existingImages];
     }
 
-    // ✅ upload new images
+    // upload new images
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
+        console.log("Uploading edit image:", file.originalname);
         const url = await uploadToCloudinary(file.buffer);
         imagePaths.push(url);
       }

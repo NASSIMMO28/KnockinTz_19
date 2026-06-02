@@ -30,7 +30,11 @@ const upload = multer({
 const uploadToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.upload_stream(
-      { folder: "knockin-properties" },
+      { 
+        folder: "knockin-properties",
+        quality: "auto:best",  // ✅ best quality
+        fetch_format: "auto",  // ✅ auto format
+      },
       (error, result) => {
         if (error) reject(error);
         else resolve(result.secure_url);

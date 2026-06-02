@@ -457,3 +457,24 @@ exports.cancelWithRefund = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// ================================
+// CLEANUP EXPIRED BOOKINGS
+// ================================
+exports.cleanupExpiredBookings = async () => {
+  try {
+    const expiredTime = new Date(Date.now() - 30 * 60 * 1000); // 30 mins ago
+    const result = await Booking.updateMany(
+      {
+        status: "pending",
+        paymentStatus: "pending",
+        createdAt: { $lt: expiredTime }
+      },
+      { status: "cancelled" }
+    );
+    if (result.modifiedCount > 0) {
+      console.log(`Cleaned up ${result.modifiedCount} expired bookings`);
+    }
+  } catch (error) {
+    console.log("Cleanup error:", error.message);
+  }
+};

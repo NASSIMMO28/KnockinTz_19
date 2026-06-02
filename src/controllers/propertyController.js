@@ -139,7 +139,10 @@ exports.updateProperty = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // keep existing images host didn't remove
+    console.log("UPDATE - FILES:", req.files?.length ?? 0);
+    console.log("UPDATE - EXISTING:", req.body.existingImages);
+
+    // keep existing images
     let imagePaths = [];
     if (req.body.existingImages) {
       imagePaths = Array.isArray(req.body.existingImages)
@@ -152,9 +155,12 @@ exports.updateProperty = async (req, res) => {
       for (const file of req.files) {
         console.log("Uploading edit image:", file.originalname);
         const url = await uploadToCloudinary(file.buffer);
+        console.log("Uploaded:", url);
         imagePaths.push(url);
       }
     }
+
+    console.log("FINAL IMAGES:", imagePaths);
 
     const updated = await Property.findByIdAndUpdate(
       req.params.id,
@@ -164,6 +170,7 @@ exports.updateProperty = async (req, res) => {
 
     res.json({ message: "Property updated", property: updated });
   } catch (error) {
+    console.log("UPDATE ERROR:", error.message);
     res.status(500).json({ message: error.message });
   }
 };

@@ -12,42 +12,27 @@ const {
 } = require("../controllers/propertyController");
 
 const { protect } = require("../middleware/authMiddleware");
-const { upload } = require("../middleware/upload"); // ✅ add this
+const { upload } = require("../middleware/upload");
 
-// ================================
-// CREATE PROPERTY (HOST)
-// ================================
-router.post("/", protect, upload.array("images", 10), createProperty); // ✅ added upload
+// CREATE PROPERTY
+router.post("/", protect, upload.array("images", 10), createProperty);
 
-// ================================
 // UPDATE PROPERTY
-// ================================
-router.put("/:id", protect, updateProperty);
 router.put("/:id", protect, upload.array("images", 10), updateProperty);
 
-// ================================
-// DELETE PROPERTY (SOFT)
-// ================================
+// DELETE PROPERTY
 router.delete("/:id", protect, deleteProperty);
 
-// ================================
-// BLOCK DATES (ADVANCED AVAILABILITY)
-// ================================
+// BLOCK DATES
 router.post("/:id/block-dates", protect, blockDates);
 
-// ================================
-// SEARCH PROPERTIES
-// ================================
+// SEARCH
 router.get("/search", searchProperties);
 
-// ================================
-// GET ALL PROPERTIES
-// ================================
+// GET ALL
 router.get("/", getProperties);
 
-// ================================
-// GET SINGLE PROPERTY
-// ================================
+// GET ONE
 router.get("/:id", getProperty);
 
 module.exports = router;

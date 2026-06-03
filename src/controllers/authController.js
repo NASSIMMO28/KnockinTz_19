@@ -162,6 +162,13 @@ exports.updateProfile = async (req, res) => {
     if (fullName) user.fullName = fullName;
     if (phone) user.phone = phone;
 
+    // ✅ update payout details
+    if (req.body.payoutMethod) user.payoutMethod = req.body.payoutMethod;
+    if (req.body.payoutPhone) user.payoutPhone = req.body.payoutPhone;
+    if (req.body.payoutBankName) user.payoutBankName = req.body.payoutBankName;
+    if (req.body.payoutBankAccount) user.payoutBankAccount = req.body.payoutBankAccount;
+    if (req.body.payoutBankBranch) user.payoutBankBranch = req.body.payoutBankBranch;
+
     // update password if provided
     if (currentPassword && newPassword) {
       const isMatch = await bcrypt.compare(currentPassword, user.password);
@@ -182,7 +189,12 @@ exports.updateProfile = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         phone: user.phone,
-        role: user.role
+        role: user.role,
+        payoutMethod: user.payoutMethod,
+        payoutPhone: user.payoutPhone,
+        payoutBankName: user.payoutBankName,
+        payoutBankAccount: user.payoutBankAccount,
+        payoutBankBranch: user.payoutBankBranch
       }
     });
 

@@ -161,15 +161,13 @@ exports.updateProfile = async (req, res) => {
     // update name
     if (fullName) user.fullName = fullName;
     if (phone) user.phone = phone;
-
-    // ✅ update payout details
-    if (req.body.payoutMethod) user.payoutMethod = req.body.payoutMethod;
-    if (req.body.payoutPhone) user.payoutPhone = req.body.payoutPhone;
-    if (req.body.payoutBankName) user.payoutBankName = req.body.payoutBankName;
-    if (req.body.payoutBankAccount) user.payoutBankAccount = req.body.payoutBankAccount;
-    if (req.body.payoutBankBranch) user.payoutBankBranch = req.body.payoutBankBranch;
-
-    // update password if provided
+    if (req.body.payoutMethod !== undefined) user.payoutMethod = req.body.payoutMethod;
+    if (req.body.payoutPhone !== undefined) user.payoutPhone = req.body.payoutPhone;
+    if (req.body.payoutBankName !== undefined) user.payoutBankName = req.body.payoutBankName;
+    if (req.body.payoutBankAccount !== undefined) user.payoutBankAccount = req.body.payoutBankAccount;
+    if (req.body.payoutBankBranch !== undefined) user.payoutBankBranch = req.body.payoutBankBranch;
+    
+    // update password if provide
     if (currentPassword && newPassword) {
       const isMatch = await bcrypt.compare(currentPassword, user.password);
       if (!isMatch) {

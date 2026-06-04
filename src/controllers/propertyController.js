@@ -81,7 +81,7 @@ exports.getProperty = async (req, res) => {
 // ================================
 exports.searchProperties = async (req, res) => {
   try {
-    const { city, minPrice, maxPrice, rating, guests, checkIn, checkOut } = req.query;
+    const { city, minPrice, maxPrice, rating, guests, checkIn, checkOut, propertyType } = req.query;
 
     let filter = { isActive: true };
 
@@ -93,6 +93,10 @@ exports.searchProperties = async (req, res) => {
       if (maxPrice) filter.pricePerNight.$lte = Number(maxPrice);
     }
     if (rating) filter.averageRating = { $gte: Number(rating) };
+    if (propertyType) {
+      const types = propertyType.split(",");
+      filter.propertyType = { $in: types };
+    }
 
     let properties = await Property.find(filter).populate("host", "fullName email");
 

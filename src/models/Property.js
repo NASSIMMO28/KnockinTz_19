@@ -56,6 +56,11 @@ const PropertySchema = new mongoose.Schema(
       default: []
     },
 
+    propertyType: {
+  type: String,
+  enum: ["apartment", "house", "villa", "hotel", "lodge", "guest_house"],
+  default: "apartment"
+},
     // ======================
     // LOCATION (MAP READY)
     // ======================

@@ -21,6 +21,8 @@ router.get("/withdrawals", adminOnly, async (req, res) => {
     const User = require("../models/User");
     const Booking = require("../models/Booking");
 
+    const WithdrawalHistory = require("../models/WithdrawalHistory");
+
     // get all hosts with payout details
     const hosts = await User.find({ role: "host" })
       .select("fullName email payoutMethod payoutPhone payoutBankName payoutBankAccount payoutBankBranch");
@@ -56,6 +58,32 @@ router.get("/withdrawals", adminOnly, async (req, res) => {
 
     const withdrawals = Object.values(withdrawalMap);
     res.json({ withdrawals });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+// GET withdrawal history
+router.get("/withdrawal-history", adminOnly, async (req, res) => {
+  try {
+    const history = await WithdrawalHistory.find()
+      .sort({ createdAt: -1 });
+    res.json({ history });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST platform withdrawal
+router.post("/withdraw", adminOnly, async (req, res) => {
+  try {
+    const { amount, method, phone, bankName, bankAccount, note } = req.body;
+    const withdrawal = new WithdrawalHistory({
+      amount, method, phone, bankName, bankAccount, note,
+      status: "completed",
+      createdAt: new Date()
+    });
+    await withdrawal.save();
+    res.json({ message: "Withdrawal recorded", withdrawal });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -52,6 +52,7 @@ const wishlistRoutes = require("./routes/wishlistRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const walletRoutes = require("./routes/walletRoutes");
 
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/payment", paymentRoutes);
@@ -62,6 +63,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/host", hostRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/wallet", walletRoutes);
 
 // ======================
 // TEST ROUTE

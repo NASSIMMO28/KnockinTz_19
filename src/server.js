@@ -108,11 +108,29 @@ app.use((err, req, res, next) => {
 // DB CONNECT + CLEANUP
 // ======================
 const { cleanupExpiredBookings } = require("./controllers/bookingController");
+const PlatformConfig = require("./models/PlatformConfig");
+
+const seedConfig = async () => {
+  const defaults = [
+    { key: "host_commission", value: 0.05, description: "Host commission rate (5%)" },
+    { key: "guest_service_fee", value: 0.05, description: "Guest service fee (5%)" },
+    { key: "min_withdrawal", value: 50000, description: "Minimum withdrawal amount (TZS)" },
+  ];
+
+  for (const config of defaults) {
+    await PlatformConfig.findOneAndUpdate(
+      { key: config.key },
+      { $setOnInsert: config },
+      { upsert: true, new: true }
+    );
+  }
+  console.log("✅ Platform config seeded");
+};
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB Connected");
-
+    seedConfig();
     setInterval(() => {
       cleanupExpiredBookings();
     }, 5 * 60 * 1000);

@@ -30,20 +30,20 @@ exports.createBooking = async (req, res) => {
     }
 
     // 🔥 overlap check
-   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
 
-const existingBooking = await Booking.findOne({
-  property: propertyId,
-  $or: [
-    { status: "confirmed" },
-    {
-      status: "pending",
-      createdAt: { $gt: tenMinutesAgo }
-    }
-  ],
-  checkIn: { $lt: checkOutDate },
-  checkOut: { $gt: checkInDate }
-});
+    const existingBooking = await Booking.findOne({
+      property: propertyId,
+      $or: [
+        { status: "confirmed" },
+        {
+          status: "pending",
+          createdAt: { $gt: tenMinutesAgo }
+        }
+      ],
+      checkIn: { $lt: checkOutDate },
+      checkOut: { $gt: checkInDate }
+    });
 
     if (existingBooking) {
       return res.status(400).json({
@@ -63,34 +63,34 @@ const existingBooking = await Booking.findOne({
     }
 
     // price calculation
-const price = property.pricePerNight * nights;
+    const price = property.pricePerNight * nights;
 
-// ✅ 5% service fee from guest
-const guestFee = price * 0.05;
-const totalPrice = price;
-const grandTotal = price + guestFee; // guest pays this
+    // ✅ 5% service fee from guest
+    const guestFee = price * 0.05;
+    const totalPrice = price;
+    const grandTotal = price + guestFee; // guest pays this
 
-// ✅ 5% commission from host (deducted at payout)
-const hostFee = price * 0.05;
-const hostPayout = price - hostFee; // host receives this
+    // ✅ 5% commission from host (deducted at payout)
+    const hostFee = price * 0.05;
+    const hostPayout = price - hostFee; // host receives this
 
-const booking = new Booking({
-  property: propertyId,
-  guest: req.user.id,
-  checkIn: checkInDate,
-  checkOut: checkOutDate,
-  totalPrice: price,           // base price
-  serviceFee: guestFee,        // 5% guest fee
-  grandTotal: grandTotal,      // what guest pays
-  status: "pending",
-  paymentStatus: "pending"
-});
+    const booking = new Booking({
+      property: propertyId,
+      guest: req.user.id,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
+      totalPrice: price,           // base price
+      serviceFee: guestFee,        // 5% guest fee
+      grandTotal: grandTotal,      // what guest pays
+      status: "pending",
+      paymentStatus: "pending"
+    });
 
-if (property.host.toString() === req.user.id) {
-  return res.status(400).json({
-    message: "You cannot book your own property"
-  });
-}
+    if (property.host.toString() === req.user.id) {
+      return res.status(400).json({
+        message: "You cannot book your own property"
+      });
+    }
 
     await booking.save();
 
@@ -121,9 +121,9 @@ exports.getPropertyBookings = async (req, res) => {
     const propertyId = req.params.propertyId;
 
     const bookings = await Booking.find({
-  property: propertyId,
-  status: { $ne: "cancelled" }
-}).select("checkIn checkOut");
+      property: propertyId,
+      status: { $ne: "cancelled" }
+    }).select("checkIn checkOut");
 
     res.json({
       bookings
@@ -181,7 +181,7 @@ exports.cancelBooking = async (req, res) => {
     }
 
     booking.status = "cancelled";
-await booking.save();
+    await booking.save();
 
     res.json({
       message: "Booking cancelled successfully"
@@ -193,6 +193,8 @@ await booking.save();
     });
   }
 };
+
+
 // ================================
 // GET BOOKED DATES (CALENDAR)
 // ================================
@@ -201,10 +203,10 @@ exports.getBookedDates = async (req, res) => {
 
     const propertyId = req.params.propertyId;
 
-   const bookings = await Booking.find({
-  property: propertyId,
-  status: { $ne: "cancelled" }
-}).select("checkIn checkOut");
+    const bookings = await Booking.find({
+      property: propertyId,
+      status: { $ne: "cancelled" }
+    }).select("checkIn checkOut");
 
     let bookedDates = [];
 
@@ -230,6 +232,8 @@ exports.getBookedDates = async (req, res) => {
     });
   }
 };
+
+
 exports.getHostBookings = async (req, res) => {
   try {
 
@@ -251,6 +255,8 @@ exports.getHostBookings = async (req, res) => {
     });
   }
 };
+
+
 // =======================================
 // ✅ CHECK AVAILABILITY (REAL-TIME)
 // =======================================
@@ -310,14 +316,12 @@ exports.initPayment = async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // tayari imelipwa?
     if (booking.paymentStatus === "paid") {
       return res.status(400).json({
         message: "Already paid"
       });
     }
 
-    // hapa baadaye utaweka Pesapal / Selcom
     res.json({
       message: "Proceed to payment",
       amount: booking.totalPrice,
@@ -388,8 +392,11 @@ exports.paymentFailed = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 const { calculateRefund, processRefund } = require("../services/refundService");
 const { scheduleAutoPayout } = require("../services/payoutService");
+const { creditHostWallet } = require("../services/walletService");
 
 // ================================
 // CHECK IN (GUEST ACTION)
@@ -398,25 +405,20 @@ exports.checkIn = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ message: "Booking not found" });
-    if (booking.guest.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-    if (booking.status !== "confirmed") {
-      return res.status(400).json({ message: "Booking must be confirmed before check-in" });
-    }
+
     booking.status = "checked_in";
     booking.checkedInAt = new Date();
-    booking.checkedInBy = "guest";
     await booking.save();
 
-    // schedule auto payout after 24 hours
-    scheduleAutoPayout(booking._id.toString(), 24);
+    // ✅ auto credit host wallet
+    await creditHostWallet(booking);
 
     res.json({ message: "Checked in successfully", booking });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // ================================
 // GET REFUND ESTIMATE
@@ -434,6 +436,7 @@ exports.getRefundEstimate = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // ================================
 // CANCEL WITH REFUND
@@ -457,6 +460,8 @@ exports.cancelWithRefund = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 // ================================
 // CLEANUP EXPIRED BOOKINGS
 // ================================

@@ -1,4 +1,5 @@
 const Booking = require("../models/Booking");
+const { creditHostWallet } = require("../services/walletService");
 const Property = require("../models/Property");
 const User = require("../models/User");
 

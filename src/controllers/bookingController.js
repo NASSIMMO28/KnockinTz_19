@@ -1,6 +1,9 @@
-const Booking = require("../models/Booking");const { creditHostWallet } = require("../services/walletService");
+const Booking = require("../models/Booking");
+const { creditHostWallet } = require("../services/walletService");
 const Property = require("../models/Property");
 const User = require("../models/User");
+const { calculateRefund, processRefund } = require("../services/refundService");
+const { scheduleAutoPayout } = require("../services/payoutService");
 
 // ================================
 // CREATE BOOKING
@@ -393,10 +396,6 @@ exports.paymentFailed = async (req, res) => {
   }
 };
 
-
-const { calculateRefund, processRefund } = require("../services/refundService");
-const { scheduleAutoPayout } = require("../services/payoutService");
-const { creditHostWallet } = require("../services/walletService");
 
 // ================================
 // CHECK IN (GUEST ACTION)

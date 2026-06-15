@@ -4,6 +4,7 @@ const Property = require("../models/Property");
 const User = require("../models/User");
 const { calculateRefund, processRefund } = require("../services/refundService");
 const { scheduleAutoPayout } = require("../services/payoutService");
+const Notification = require("../models/Notification");
 
 // ================================
 // CREATE BOOKING
@@ -114,6 +115,34 @@ exports.createBooking = async (req, res) => {
   }
 };
 
+// HOST NOTIFICATION
+
+await Notification.create({
+  recipient: property.host,
+  title: "New Booking",
+  message: `${req.user.fullName} booked ${property.title}
+Check-in: ${checkIn}
+Check-out: ${checkOut}
+Amount: ${totalPrice} TZS`
+});
+
+
+// ADMIN NOTIFICATION
+
+const admins = await User.find({
+  role: "admin"
+});
+
+for (const admin of admins) {
+  await Notification.create({
+    recipient: admin._id,
+    title: "New Booking",
+    message: `${req.user.fullName} booked ${property.title}
+Check-in: ${checkIn}
+Check-out: ${checkOut}
+Amount: ${totalPrice} TZS`
+  });
+}
 
 // ================================
 // GET BOOKINGS FOR ONE PROPERTY

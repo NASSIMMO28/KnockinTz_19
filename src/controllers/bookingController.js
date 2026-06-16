@@ -431,18 +431,27 @@ exports.paymentFailed = async (req, res) => {
 // ================================
 exports.checkIn = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id)
+      .populate("property", "host");
+
     if (!booking) return res.status(404).json({ message: "Booking not found" });
 
     booking.status = "checked_in";
     booking.checkedInAt = new Date();
     await booking.save();
 
-    // ✅ auto credit host wallet
-    await creditHostWallet(booking);
+    // ✅ get host from property
+    const bookingForWallet = {
+      _id: booking._id,
+      host: booking.property.host,
+      totalPrice: booking.totalPrice,
+    };
+
+    await creditHostWallet(bookingForWallet);
 
     res.json({ message: "Checked in successfully", booking });
   } catch (error) {
+    console.log("CheckIn error:", error.message);
     res.status(500).json({ message: error.message });
   }
 };

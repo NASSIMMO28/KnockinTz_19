@@ -98,52 +98,68 @@ exports.createBooking = async (req, res) => {
 
     await booking.save();
 
-    res.json({
-      message: "Booking successful",
-      nights,
-      price,
-      guestFee,
-      hostFee,
-      totalPrice,
-      booking
-    });
+try {
 
-  } catch (error) {
-    res.status(500).json({
-      message: error.message
-    });
-  }
-};
+  console.log("HOST ID:", property.host);
 
-// HOST NOTIFICATION
-
-await Notification.create({
-  recipient: property.host,
-  title: "New Booking",
-  message: `${req.user.fullName} booked ${property.title}
-Check-in: ${checkIn}
-Check-out: ${checkOut}
-Amount: ${totalPrice} TZS`
-});
-
-
-// ADMIN NOTIFICATION
-
-const admins = await User.find({
-  role: "admin"
-});
-
-for (const admin of admins) {
-  await Notification.create({
-    recipient: admin._id,
+  const notification = await Notification.create({
+    recipient: property.host,
     title: "New Booking",
-    message: `${req.user.fullName} booked ${property.title}
-Check-in: ${checkIn}
-Check-out: ${checkOut}
-Amount: ${totalPrice} TZS`
+    message: `A new booking was made for ${property.title}`
+  });
+
+  console.log(
+    "HOST NOTIFICATION SAVED:",
+    notification._id
+  );
+
+  const admins = await User.find({
+    role: "admin"
+  });
+
+  console.log(
+    "ADMINS FOUND:",
+    admins.length
+  );
+
+  for (const admin of admins) {
+
+    const adminNotification =
+      await Notification.create({
+        recipient: admin._id,
+        title: "New Booking",
+        message: `A new booking was made for ${property.title}`
+      });
+
+    console.log(
+      "ADMIN NOTIFICATION SAVED:",
+      adminNotification._id
+    );
+  }
+
+} catch (notificationError) {
+
+  console.log(
+    "NOTIFICATION ERROR:",
+    notificationError
+  );
+
+}
+res.json({
+  message: "Booking successful",
+  nights,
+  price,
+  guestFee,
+  hostFee,
+  totalPrice,
+  booking
+});
+} catch (error) {
+  res.status(500).json({
+    message: error.message
   });
 }
-
+};
 // ================================
 // GET BOOKINGS FOR ONE PROPERTY
 // ================================
@@ -431,19 +447,22 @@ exports.paymentFailed = async (req, res) => {
 // ================================
 exports.checkIn = async (req, res) => {
   try {
+    // ✅ KEY FIX: Populate property to get the host
     const booking = await Booking.findById(req.params.id)
-      .populate("property", "host");
+      .populate("property", "host"); // ← This line is critical
 
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
 
     booking.status = "checked_in";
     booking.checkedInAt = new Date();
     await booking.save();
 
-    // ✅ get host from property
+    // ✅ Extract host from property (not from booking)
     const bookingForWallet = {
       _id: booking._id,
-      host: booking.property.host,
+      host: booking.property.host, // ← Get host from property, not booking
       totalPrice: booking.totalPrice,
     };
 

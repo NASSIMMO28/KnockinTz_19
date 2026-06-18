@@ -18,6 +18,9 @@ exports.getStats = async (req, res) => {
     const cancelledBookings = await Booking.countDocuments({ status: "cancelled" });
     const completedBookings = await Booking.countDocuments({ status: "completed" });
     const checkedInBookings = await Booking.countDocuments({ status: "checked_in" });
+    const Wallet = require("../models/Wallet");
+    const WithdrawalRequest = require("../models/WithdrawalRequest");
+    const WalletTransaction = require("../models/WalletTransaction");
 
     // ✅ Calculate total revenue from PAID bookings
     const revenueData = await Booking.aggregate([

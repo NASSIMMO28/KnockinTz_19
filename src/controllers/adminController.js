@@ -20,7 +20,7 @@ exports.getStats = async (req, res) => {
     const checkedInBookings = await Booking.countDocuments({ status: "checked_in" });
     const Wallet = require("../models/Wallet");
     const WithdrawalRequest = require("../models/WithdrawalRequest");
-    const WalletTransaction = require("../models/WalletTransaction");
+
 
     // ✅ Calculate total revenue from PAID bookings
     const revenueData = await Booking.aggregate([

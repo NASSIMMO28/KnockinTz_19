@@ -447,30 +447,49 @@ exports.paymentFailed = async (req, res) => {
 // ================================
 exports.checkIn = async (req, res) => {
   try {
-    // ✅ KEY FIX: Populate property to get the host
+    console.log("🔍 DEBUG: Checking in booking:", req.params.id);
+
+    // ✅ CORRECT POPULATE SYNTAX
     const booking = await Booking.findById(req.params.id)
-      .populate("property", "host"); // ← This line is critical
+      .populate("property"); // Just populate entire property object
+
+    console.log("🔍 Booking found:", !!booking);
+    console.log("🔍 Property found:", !!booking?.property);
+    console.log("🔍 Property host:", booking?.property?.host);
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
+    if (!booking.property || !booking.property.host) {
+      return res.status(400).json({ 
+        message: "Property or host missing",
+        property: booking.property,
+        host: booking.property?.host
+      });
+    }
+
+    // Update booking
     booking.status = "checked_in";
     booking.checkedInAt = new Date();
     await booking.save();
 
-    // ✅ Extract host from property (not from booking)
+    // Create wallet object
     const bookingForWallet = {
       _id: booking._id,
-      host: booking.property.host, // ← Get host from property, not booking
+      host: booking.property.host, // This is the user ID
       totalPrice: booking.totalPrice,
     };
 
+    console.log("🔍 Crediting wallet for host:", bookingForWallet.host);
+    console.log("🔍 Amount:", bookingForWallet.totalPrice);
+
+    // Credit the wallet
     await creditHostWallet(bookingForWallet);
 
     res.json({ message: "Checked in successfully", booking });
   } catch (error) {
-    console.log("CheckIn error:", error.message);
+    console.error("❌ CheckIn error:", error);
     res.status(500).json({ message: error.message });
   }
 };

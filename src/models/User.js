@@ -27,6 +27,11 @@ const userSchema = new mongoose.Schema({
   hostFreeUntil: {
     type: Date
   },
+  
+  fcmToken: {
+  type: String,
+  default: null
+},
 
   // ==============================
   // PAYOUT DETAILS (HOST ONLY)
@@ -58,5 +63,6 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
 
 module.exports = mongoose.model("User", userSchema);

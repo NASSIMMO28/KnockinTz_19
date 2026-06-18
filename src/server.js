@@ -53,7 +53,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const walletRoutes = require("./routes/walletRoutes");
-const notificationRoutes =
+const notificationRoutes = require("./routes/notificationRoutes");
 
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/payment", paymentRoutes);

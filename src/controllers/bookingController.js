@@ -36,24 +36,19 @@ exports.createBooking = async (req, res) => {
     // 🔥 overlap check
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
 
-    const existingBooking = await Booking.findOne({
-      property: propertyId,
-      $or: [
-        { status: "confirmed" },
-        {
-          status: "pending",
-          createdAt: { $gt: tenMinutesAgo }
-        }
-      ],
-      checkIn: { $lt: checkOutDate },
-      checkOut: { $gt: checkInDate }
-    });
+    c// 🔥 CORRECT OVERLAP CHECK
+const existingBooking = await Booking.findOne({
+  property: propertyId,
+  status: { $in: ["pending", "confirmed", "checked_in", "completed"] }, // Check ALL active statuses
+  checkIn: { $lt: checkOutDate },
+  checkOut: { $gt: checkInDate }
+});
 
-    if (existingBooking) {
-      return res.status(400).json({
-        message: "Property already booked for these dates"
-      });
-    }
+if (existingBooking) {
+  return res.status(400).json({
+    message: "Property already booked for these dates"
+  });
+}
 
     // calculate nights
     const nights = Math.ceil(
@@ -310,7 +305,6 @@ exports.getHostBookings = async (req, res) => {
 // =======================================
 exports.checkAvailability = async (req, res) => {
   try {
-
     const { propertyId, checkIn, checkOut } = req.body;
 
     const checkInDate = new Date(checkIn);
@@ -322,10 +316,10 @@ exports.checkAvailability = async (req, res) => {
       });
     }
 
-    // check overlapping bookings
+    // ✅ CORRECT: Check all active bookings
     const existingBooking = await Booking.findOne({
       property: propertyId,
-      status: { $ne: "cancelled" },
+      status: { $in: ["pending", "confirmed", "checked_in", "completed"] },
       checkIn: { $lt: checkOutDate },
       checkOut: { $gt: checkInDate }
     });
@@ -348,7 +342,6 @@ exports.checkAvailability = async (req, res) => {
     });
   }
 };
-
 
 // =======================================
 // 💳 INIT PAYMENT

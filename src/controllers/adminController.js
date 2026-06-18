@@ -7,6 +7,8 @@ const Booking = require("../models/Booking");
 // ================================
 exports.getStats = async (req, res) => {
   try {
+    const WalletTransaction = require("../models/WalletTransaction");
+    
     const totalUsers = await User.countDocuments();
     const totalHosts = await User.countDocuments({ role: "host" });
     const totalGuests = await User.countDocuments({ role: "guest" });
@@ -15,30 +17,41 @@ exports.getStats = async (req, res) => {
     const confirmedBookings = await Booking.countDocuments({ status: "confirmed" });
     const cancelledBookings = await Booking.countDocuments({ status: "cancelled" });
     const completedBookings = await Booking.countDocuments({ status: "completed" });
+    const checkedInBookings = await Booking.countDocuments({ status: "checked_in" });
 
-    // ✅ Calculate revenue from PAID bookings
+    // ✅ Calculate total revenue from PAID bookings
     const revenueData = await Booking.aggregate([
       { $match: { paymentStatus: "paid" } },
       { $group: { _id: null, total: { $sum: "$grandTotal" } } }
     ]);
 
     const totalRevenue = revenueData[0]?.total || 0;
-    
-    // ✅ Calculate platform earnings from actual commission transactions
-    const WalletTransaction = require("../models/WalletTransaction");
-    
+
+    // ✅ Calculate platform earnings - SUM absolute value of commission_deduction
     const commissionData = await WalletTransaction.aggregate([
       { $match: { type: "commission_deduction" } },
-      { $group: { _id: null, total: { $sum: { $abs: "$amount" } } } }
+      {
+        $group: {
+          _id: null,
+          total: {
+            $sum: {
+              $cond: [
+                { $lt: ["$amount", 0] },
+                { $multiply: ["$amount", -1] }, // Convert negative to positive
+                "$amount"
+              ]
+            }
+          }
+        }
+      }
     ]);
 
     const platformEarnings = commissionData[0]?.total || 0;
 
-    console.log("📊 Admin Stats:", {
-      totalRevenue,
-      platformEarnings,
-      paidBookings: revenueData[0]?.count || 0
-    });
+    console.log("📊 Admin Stats:");
+    console.log("   Total Revenue:", totalRevenue);
+    console.log("   Platform Earnings:", platformEarnings);
+    console.log("   Commission transactions found:", commissionData[0]);
 
     res.json({
       totalUsers,
@@ -49,11 +62,12 @@ exports.getStats = async (req, res) => {
       confirmedBookings,
       cancelledBookings,
       completedBookings,
+      checkedInBookings,
       totalRevenue,
       platformEarnings
     });
   } catch (error) {
-    console.error("Stats error:", error);
+    console.error("❌ Stats error:", error);
     res.status(500).json({ message: error.message });
   }
 };

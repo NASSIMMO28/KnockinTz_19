@@ -14,14 +14,31 @@ exports.getStats = async (req, res) => {
     const totalBookings = await Booking.countDocuments();
     const confirmedBookings = await Booking.countDocuments({ status: "confirmed" });
     const cancelledBookings = await Booking.countDocuments({ status: "cancelled" });
+    const completedBookings = await Booking.countDocuments({ status: "completed" });
 
+    // ✅ Calculate revenue from PAID bookings
     const revenueData = await Booking.aggregate([
       { $match: { paymentStatus: "paid" } },
       { $group: { _id: null, total: { $sum: "$grandTotal" } } }
     ]);
 
     const totalRevenue = revenueData[0]?.total || 0;
-    const platformEarnings = totalRevenue * 0.10;
+    
+    // ✅ Calculate platform earnings from actual commission transactions
+    const WalletTransaction = require("../models/WalletTransaction");
+    
+    const commissionData = await WalletTransaction.aggregate([
+      { $match: { type: "commission_deduction" } },
+      { $group: { _id: null, total: { $sum: { $abs: "$amount" } } } }
+    ]);
+
+    const platformEarnings = commissionData[0]?.total || 0;
+
+    console.log("📊 Admin Stats:", {
+      totalRevenue,
+      platformEarnings,
+      paidBookings: revenueData[0]?.count || 0
+    });
 
     res.json({
       totalUsers,
@@ -31,10 +48,12 @@ exports.getStats = async (req, res) => {
       totalBookings,
       confirmedBookings,
       cancelledBookings,
+      completedBookings,
       totalRevenue,
       platformEarnings
     });
   } catch (error) {
+    console.error("Stats error:", error);
     res.status(500).json({ message: error.message });
   }
 };

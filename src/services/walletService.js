@@ -27,13 +27,20 @@ const getCommissionRate = async () => {
 // ================================
 const creditHostWallet = async (booking) => {
   try {
+    console.log("🔍 creditHostWallet called with booking:", booking._id);
+
+    if (!booking.host) {
+      throw new Error("Booking has no host ID");
+    }
+
     // prevent duplicate credit
     const existing = await WalletTransaction.findOne({
       booking: booking._id,
       type: "booking_credit"
     });
+    
     if (existing) {
-      console.log("Wallet already credited for booking:", booking._id);
+      console.log("⚠️ Already credited for booking:", booking._id);
       return;
     }
 
@@ -42,50 +49,63 @@ const creditHostWallet = async (booking) => {
     const commission = Math.round(bookingAmount * commissionRate);
     const hostEarnings = bookingAmount - commission;
 
+    console.log("💰 Earnings: amount=" + bookingAmount + ", commission=" + commission + ", earnings=" + hostEarnings);
+
     const wallet = await getOrCreateWallet(booking.host);
     const balanceBefore = wallet.availableBalance;
     const balanceAfter = balanceBefore + hostEarnings;
 
-    // update wallet
+    // Update wallet
     wallet.availableBalance = balanceAfter;
     wallet.totalEarnings += hostEarnings;
     wallet.lifetimeRevenue += bookingAmount;
     wallet.updatedAt = new Date();
-    await wallet.save();
+    
+    const savedWallet = await wallet.save();
+    console.log("✅ Wallet saved - new balance: " + balanceAfter);
 
-    // log booking credit transaction
-    await WalletTransaction.create({
-      wallet: wallet._id,
-      host: booking.host,
-      booking: booking._id,
-      type: "booking_credit",
-      amount: hostEarnings,
-      balanceBefore,
-      balanceAfter,
-      description: `Booking earnings for ${booking._id}`,
-      status: "completed",
-      reference: booking._id.toString()
-    });
+    // Create booking_credit transaction
+    try {
+      const txn1 = await WalletTransaction.create({
+        wallet: wallet._id,
+        host: booking.host,
+        booking: booking._id,
+        type: "booking_credit",
+        amount: hostEarnings,
+        balanceBefore,
+        balanceAfter,
+        description: `Booking earnings for ${booking._id}`,
+        status: "completed",
+        reference: booking._id.toString()
+      });
+      console.log("✅ Transaction 1 created:", txn1._id);
+    } catch (txnError) {
+      console.error("❌ Transaction 1 failed:", txnError.message);
+    }
 
-    // log commission deduction
-    await WalletTransaction.create({
-      wallet: wallet._id,
-      host: booking.host,
-      booking: booking._id,
-      type: "commission_deduction",
-      amount: -commission,
-      balanceBefore: bookingAmount,
-      balanceAfter: hostEarnings,
-      description: `Platform commission (${commissionRate * 100}%)`,
-      status: "completed",
-      reference: booking._id.toString()
-    });
+    // Create commission_deduction transaction
+    try {
+      const txn2 = await WalletTransaction.create({
+        wallet: wallet._id,
+        host: booking.host,
+        booking: booking._id,
+        type: "commission_deduction",
+        amount: -commission,
+        balanceBefore: bookingAmount,
+        balanceAfter: hostEarnings,
+        description: `Platform commission (${commissionRate * 100}%)`,
+        status: "completed",
+        reference: booking._id.toString()
+      });
+      console.log("✅ Transaction 2 created:", txn2._id);
+    } catch (txnError) {
+      console.error("❌ Transaction 2 failed:", txnError.message);
+    }
 
     console.log(`✅ Wallet credited: TZS ${hostEarnings} for host ${booking.host}`);
     return { hostEarnings, commission, wallet };
-
   } catch (error) {
-    console.error("Wallet credit error:", error.message);
+    console.error("❌ creditHostWallet error:", error.message);
     throw error;
   }
 };

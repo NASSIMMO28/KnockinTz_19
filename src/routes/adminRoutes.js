@@ -17,6 +17,10 @@ router.get("/properties", ...adminOnly, adminController.getProperties);
 router.delete("/properties/:id", ...adminOnly, adminController.deleteProperty);
 router.get("/bookings", ...adminOnly, adminController.getBookings);
 router.put("/bookings/:id", ...adminOnly, adminController.updateBooking);
+router.get("/wallets", ...adminOnly, adminController.getAdminWallets);
+router.get("/withdrawal-requests", ...adminOnly, adminController.getWithdrawalRequests);
+router.put("/withdrawal-requests/:id", ...adminOnly, adminController.updateWithdrawalRequest);
+router.get("/financial-report", ...adminOnly, adminController.getFinancialReport);
 
 // GET all withdrawals
 router.get("/withdrawals", adminOnly, async (req, res) => {

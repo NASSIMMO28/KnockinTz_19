@@ -150,8 +150,12 @@ res.json({
   booking
 });
 } catch (error) {
+  console.error("❌ CREATE BOOKING ERROR:", error);
+  console.error("❌ Error message:", error.message);
+  console.error("❌ Error details:", error);
   res.status(500).json({
-    message: error.message
+    message: error.message,
+    details: error.toString()
   });
 }
 };

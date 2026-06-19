@@ -27,11 +27,15 @@ const userSchema = new mongoose.Schema({
   hostFreeUntil: {
     type: Date
   },
-  
+
   fcmToken: {
-  type: String,
-  default: null
-},
+    type: String,
+    default: null,
+    sparse: true
+  },
+  fcmTokens: [{
+    type: String
+  }],
 
   // ==============================
   // PAYOUT DETAILS (HOST ONLY)

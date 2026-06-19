@@ -11,21 +11,29 @@ const Notification = require("../models/Notification");
 // ================================
 exports.createBooking = async (req, res) => {
   try {
-
     const { propertyId, checkIn, checkOut } = req.body;
 
-    // convert dates
+    if (!propertyId || !checkIn || !checkOut) {
+      return res.status(400).json({
+        message: "Property, check-in, and check-out are required"
+      });
+    }
+
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
 
-    // validation
+    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+      return res.status(400).json({
+        message: "Invalid date format"
+      });
+    }
+
     if (checkOutDate <= checkInDate) {
       return res.status(400).json({
         message: "Check-out must be after check-in"
       });
     }
 
-    // get property
     const property = await Property.findById(propertyId);
     if (!property) {
       return res.status(404).json({
@@ -33,24 +41,25 @@ exports.createBooking = async (req, res) => {
       });
     }
 
-    // 🔥 overlap check
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    if (property.host.toString() === req.user.id) {
+      return res.status(400).json({
+        message: "You cannot book your own property"
+      });
+    }
 
-    c// 🔥 CORRECT OVERLAP CHECK
-const existingBooking = await Booking.findOne({
-  property: propertyId,
-  status: { $in: ["pending", "confirmed", "checked_in", "completed"] }, // Check ALL active statuses
-  checkIn: { $lt: checkOutDate },
-  checkOut: { $gt: checkInDate }
-});
+    const existingBooking = await Booking.findOne({
+      property: propertyId,
+      status: { $in: ["pending", "confirmed", "checked_in", "completed"] },
+      checkIn: { $lt: checkOutDate },
+      checkOut: { $gt: checkInDate }
+    });
 
-if (existingBooking) {
-  return res.status(400).json({
-    message: "Property already booked for these dates"
-  });
-}
+    if (existingBooking) {
+      return res.status(400).json({
+        message: "Property already booked for these dates"
+      });
+    }
 
-    // calculate nights
     const nights = Math.ceil(
       (checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)
     );
@@ -61,103 +70,71 @@ if (existingBooking) {
       });
     }
 
-    // price calculation
     const price = property.pricePerNight * nights;
-
-    // ✅ 5% service fee from guest
     const guestFee = price * 0.05;
     const totalPrice = price;
-    const grandTotal = price + guestFee; // guest pays this
-
-    // ✅ 5% commission from host (deducted at payout)
+    const grandTotal = price + guestFee;
     const hostFee = price * 0.05;
-    const hostPayout = price - hostFee; // host receives this
 
     const booking = new Booking({
       property: propertyId,
       guest: req.user.id,
       checkIn: checkInDate,
       checkOut: checkOutDate,
-      totalPrice: price,           // base price
-      serviceFee: guestFee,        // 5% guest fee
-      grandTotal: grandTotal,      // what guest pays
+      totalPrice: price,
+      serviceFee: guestFee,
+      grandTotal,
       status: "pending",
       paymentStatus: "pending"
     });
 
-    if (property.host.toString() === req.user.id) {
-      return res.status(400).json({
-        message: "You cannot book your own property"
-      });
-    }
-
     await booking.save();
 
-try {
+    try {
+      console.log("HOST ID:", property.host);
 
-  console.log("HOST ID:", property.host);
-
-  const notification = await Notification.create({
-    recipient: property.host,
-    title: "New Booking",
-    message: `A new booking was made for ${property.title}`
-  });
-
-  console.log(
-    "HOST NOTIFICATION SAVED:",
-    notification._id
-  );
-
-  const admins = await User.find({
-    role: "admin"
-  });
-
-  console.log(
-    "ADMINS FOUND:",
-    admins.length
-  );
-
-  for (const admin of admins) {
-
-    const adminNotification =
-      await Notification.create({
-        recipient: admin._id,
+      const notification = await Notification.create({
+        recipient: property.host,
         title: "New Booking",
         message: `A new booking was made for ${property.title}`
       });
 
-    console.log(
-      "ADMIN NOTIFICATION SAVED:",
-      adminNotification._id
-    );
+      console.log("HOST NOTIFICATION SAVED:", notification._id);
+
+      const admins = await User.find({ role: "admin" });
+      console.log("ADMINS FOUND:", admins.length);
+
+      for (const admin of admins) {
+        const adminNotification = await Notification.create({
+          recipient: admin._id,
+          title: "New Booking",
+          message: `A new booking was made for ${property.title}`
+        });
+
+        console.log("ADMIN NOTIFICATION SAVED:", adminNotification._id);
+      }
+    } catch (notificationError) {
+      console.log("NOTIFICATION ERROR:", notificationError);
+    }
+
+    return res.json({
+      message: "Booking successful",
+      nights,
+      price,
+      guestFee,
+      hostFee,
+      totalPrice,
+      booking
+    });
+  } catch (error) {
+    console.error("❌ CREATE BOOKING ERROR:", error);
+    console.error("❌ Error message:", error.message);
+    console.error("❌ Error details:", error);
+    return res.status(500).json({
+      message: error.message,
+      details: error.toString()
+    });
   }
-
-} catch (notificationError) {
-
-  console.log(
-    "NOTIFICATION ERROR:",
-    notificationError
-  );
-
-}
-res.json({
-  message: "Booking successful",
-  nights,
-  price,
-  guestFee,
-  hostFee,
-  totalPrice,
-  booking
-});
-} catch (error) {
-  console.error("❌ CREATE BOOKING ERROR:", error);
-  console.error("❌ Error message:", error.message);
-  console.error("❌ Error details:", error);
-  res.status(500).json({
-    message: error.message,
-    details: error.toString()
-  });
-}
 };
 // ================================
 // GET BOOKINGS FOR ONE PROPERTY

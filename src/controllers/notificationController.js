@@ -1,7 +1,6 @@
-// src/controllers/notificationController.js
-const Notification = require("../models/Notification");
+  const Notification = require("../models/Notification");
 const { sendPushNotification } = require("../services/firebaseService");
-
+  const User = require("../models/User");
 // Get all notifications for user
 exports.getNotifications = async (req, res) => {
   try {
@@ -166,6 +165,78 @@ exports.sendBulkNotification = async (req, res) => {
     res.json({
       message: `Notifications sent to ${notifications.length}/${userIds.length} users`,
       notifications
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message
+    });
+  }
+};
+// Save FCM token from client
+exports.saveFCMToken = async (req, res) => {
+  try {
+    const { fcmToken, platform } = req.body;
+
+    if (!fcmToken) {
+      return res.status(400).json({
+        message: "FCM token is required"
+      });
+    }
+
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    user.fcmToken = fcmToken;
+    if (!user.fcmTokens) user.fcmTokens = [];
+    if (!user.fcmTokens.includes(fcmToken)) {
+      user.fcmTokens.push(fcmToken);
+    }
+
+    await user.save();
+
+    res.json({
+      message: "FCM token saved successfully",
+      token: fcmToken,
+      platform: platform || "web"
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+// Remove FCM token
+exports.removeFCMToken = async (req, res) => {
+  try {
+    const { fcmToken } = req.body;
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    if (user.fcmTokens) {
+      user.fcmTokens = user.fcmTokens.filter(t => t !== fcmToken);
+    }
+
+    if (user.fcmToken === fcmToken) {
+      user.fcmToken = user.fcmTokens?.[0] || null;
+    }
+
+    await user.save();
+
+    res.json({
+      message: "FCM token removed successfully"
     });
   } catch (error) {
     res.status(500).json({

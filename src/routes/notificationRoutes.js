@@ -1,17 +1,10 @@
 const express = require("express");
-
 const router = express.Router();
-
 const { protect } = require("../middleware/authMiddleware");
+const notificationController = require("../controllers/notificationController");
 
-const {
-  getNotifications,
-  markAsRead
-} = require("../controllers/notificationController");
-
-router.get("/", protect, getNotifications);
-
-router.put("/:id/read", protect, markAsRead);
+router.get("/", protect, notificationController.getNotifications);
+router.put("/:id/read", protect, notificationController.markAsRead);
 router.post("/save-token", protect, notificationController.saveFCMToken);
 router.post("/remove-token", protect, notificationController.removeFCMToken);
 

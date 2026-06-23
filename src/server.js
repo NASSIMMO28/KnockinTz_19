@@ -5,8 +5,22 @@ const mongoose = require("mongoose");
 const path = require("path");
 const cors = require("cors");
 
+const securityMiddleware = require('./middleware/securityMiddleware');
+const { 
+  generalLimiter, 
+  loginLimiter, 
+  registerLimiter, 
+  paymentLimiter,
+  bookingLimiter 
+} = require('./middleware/rateLimitMiddleware');
 
 const app = express();
+
+// Apply security middleware
+securityMiddleware(app);
+
+// Apply general rate limiter to all routes
+app.use(generalLimiter);
 
 // ======================
 // 🔥 CORS
@@ -54,6 +68,7 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const walletRoutes = require("./routes/walletRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const app = express();
 
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/payment", paymentRoutes);

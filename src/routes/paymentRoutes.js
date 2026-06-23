@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/authMiddleware");
+const { paymentLimiter } = require('../middleware/rateLimitMiddleware');
 const {
   initiatePayment,
   pesapalWebhook,
@@ -9,7 +10,7 @@ const {
 
 // INITIATE PAYMENT
 router.post("/initiate", protect, initiatePayment);
-
+router.post('/register-ipn', paymentLimiter, paymentController.registerIPN);
 // PESAPAL WEBHOOK (no auth)
 router.get("/pesapal-webhook", pesapalWebhook);
 

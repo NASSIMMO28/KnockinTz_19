@@ -4,10 +4,12 @@ const router = express.Router();
 const bookingController = require("../controllers/bookingController");
 const { protect } = require("../middleware/authMiddleware");
 
+const { bookingLimiter } = require('../middleware/rateLimitMiddleware');
+const { validateCreateBooking, validateMongoId } = require('../middleware/validationMiddleware');
 // ================================
 // CREATE BOOKING
 // ================================
-router.post("/", protect, bookingController.createBooking);
+router.post('/', protect, bookingLimiter, validateCreateBooking, bookingController.createBooking);
 
 // ================================
 // GET MY BOOKINGS (guest)

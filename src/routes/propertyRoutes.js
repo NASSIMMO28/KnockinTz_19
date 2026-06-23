@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-
+const { validateCreateProperty, validateMongoId } = require('../middleware/validationMiddleware');
 const {
   createProperty,
   getProperties,
@@ -15,7 +15,7 @@ const { protect } = require("../middleware/authMiddleware");
 const { upload } = require("../middleware/upload");
 
 // CREATE PROPERTY
-router.post("/", protect, upload.array("images", 10), createProperty);
+router.post("/", protect, validateCreateProperty, upload.array("images", 10), createProperty);
 
 // UPDATE PROPERTY
 router.put("/:id", protect, upload.array("images", 10), updateProperty);

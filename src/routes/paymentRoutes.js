@@ -11,7 +11,7 @@ const {
 
 // INITIATE PAYMENT
 router.post("/initiate", protect, initiatePayment);
-router.post('/register-ipn', paymentLimiter, paymentController.registerIPN);
+
 // PESAPAL WEBHOOK (no auth)
 router.get("/pesapal-webhook", pesapalWebhook);
 

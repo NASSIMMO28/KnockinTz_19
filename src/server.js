@@ -4,45 +4,35 @@ const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
 const cors = require("cors");
-
-const securityMiddleware = require('./middleware/securityMiddleware');
-const { 
-  generalLimiter, 
-  loginLimiter, 
-  registerLimiter, 
-  paymentLimiter,
-  bookingLimiter 
-} = require('./middleware/rateLimitMiddleware');
+const helmet = require('helmet');
 
 const app = express();
 
-// Apply security middleware
-securityMiddleware(app);
-
-// Apply general rate limiter to all routes
-app.use(generalLimiter);
-
-// ======================
-// 🔥 CORS
-// ======================
+// ⭐ CORS MUST BE FIRST
 app.use(cors({
   origin: function(origin, callback) {
     const allowed = [
       "http://localhost:5173",
       "http://localhost:5174",
-      "http://localhost:53100", // flutter web
+      "http://localhost:53100",
       "https://knockin-frontend-71vx.vercel.app",
       "https://knockin-admin-hw7x.vercel.app"
     ];
-    // allow requests with no origin (mobile apps, curl)
+    
+    // ✅ Allow ALL localhost ports (dynamic ports)
     if (!origin) return callback(null, true);
-    // allow any localhost port
-    if (origin.startsWith("http://localhost")) return callback(null, true);
+    if (origin.startsWith("http://localhost:")) return callback(null, true);
     if (allowed.includes(origin)) return callback(null, true);
+    
     callback(new Error("Not allowed by CORS"));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// ✅ Helmet AFTER CORS
+app.use(helmet());
 
 // ======================
 // MIDDLEWARE

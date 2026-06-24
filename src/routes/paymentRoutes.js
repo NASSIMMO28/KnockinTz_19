@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/authMiddleware");
 const { paymentLimiter } = require('../middleware/rateLimitMiddleware');
+const paymentController = require('../controllers/paymentController')
 const {
   initiatePayment,
   pesapalWebhook,

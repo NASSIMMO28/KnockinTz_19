@@ -40,12 +40,19 @@ router.get('/:id/booked-dates', async (req, res) => {
   try {
     const Booking = require('../models/Booking');
     
-    // Find ALL bookings for this property (don't filter by status)
+    console.log('🔍 REQUEST ID:', req.params.id);
+    
     const bookings = await Booking.find({
       propertyId: req.params.id
     });
 
-    console.log(`Found ${bookings.length} bookings for property ${req.params.id}`);
+    console.log('📅 FOUND BOOKINGS:', bookings.length);
+    
+    if (bookings.length > 0) {
+      bookings.forEach(b => {
+        console.log(`   Booking: ${b.checkIn} to ${b.checkOut}`);
+      });
+    }
 
     const bookedDates = [];
     
@@ -62,16 +69,13 @@ router.get('/:id/booked-dates', async (req, res) => {
       }
     });
 
-    console.log(`Booked dates: ${bookedDates.join(', ')}`);
-
     res.json({ 
       success: true,
       bookedDates: bookedDates 
     });
   } catch (err) {
-    console.error('Error:', err);
+    console.error('❌ ERROR:', err);
     res.status(500).json({ message: err.message });
   }
 });
-
 module.exports = router;

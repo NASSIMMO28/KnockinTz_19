@@ -40,10 +40,12 @@ router.get('/:id/booked-dates', async (req, res) => {
   try {
     const Booking = require('../models/Booking');
     
+    // Find ALL bookings for this property (don't filter by status)
     const bookings = await Booking.find({
-      propertyId: req.params.id,
-      status: { $in: ['pending', 'confirmed'] } // Count both pending and confirmed
+      propertyId: req.params.id
     });
+
+    console.log(`Found ${bookings.length} bookings for property ${req.params.id}`);
 
     const bookedDates = [];
     
@@ -52,16 +54,22 @@ router.get('/:id/booked-dates', async (req, res) => {
       const checkout = new Date(booking.checkOut);
       
       while (current < checkout) {
-        bookedDates.push(current.toISOString().split('T')[0]); // Format: 2026-06-25
+        const dateStr = current.toISOString().split('T')[0];
+        if (!bookedDates.includes(dateStr)) {
+          bookedDates.push(dateStr);
+        }
         current.setDate(current.getDate() + 1);
       }
     });
+
+    console.log(`Booked dates: ${bookedDates.join(', ')}`);
 
     res.json({ 
       success: true,
       bookedDates: bookedDates 
     });
   } catch (err) {
+    console.error('Error:', err);
     res.status(500).json({ message: err.message });
   }
 });

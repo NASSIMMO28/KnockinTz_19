@@ -43,7 +43,7 @@ router.get('/:id/booked-dates', async (req, res) => {
     console.log('🔍 REQUEST ID:', req.params.id);
     
     const bookings = await Booking.find({
-      propertyId: req.params.id
+      property: req.params.id  // ← CHANGE propertyId to property
     });
 
     console.log('📅 FOUND BOOKINGS:', bookings.length);

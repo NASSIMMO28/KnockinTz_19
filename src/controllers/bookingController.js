@@ -5,6 +5,7 @@ const User = require("../models/User");
 const { calculateRefund, processRefund } = require("../services/refundService");
 const { scheduleAutoPayout } = require("../services/payoutService");
 const Notification = require("../models/Notification");
+const admin = require('firebase-admin');
 
 // ================================
 // CREATE BOOKING
@@ -90,6 +91,72 @@ exports.createBooking = async (req, res) => {
 
     await booking.save();
 
+await booking.save();
+
+    // Get property details for notification
+    const propertyDetails = await Property.findById(propertyId).populate('host');
+    
+    // Format dates
+    // Format dates for notification
+    const formattedCheckIn = new Date(checkInDate).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    const formattedCheckOut = new Date(checkOutDate).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+
+    // Send Firebase notifications to guest
+    try {
+      const guest = await User.findById(req.user.id);
+      if (guest && guest.fcmTokens && guest.fcmTokens.length > 0) {
+        for (const token of guest.fcmTokens) {
+          await admin.messaging().sendToDevice(token, {
+            notification: {
+              title: '✅ Booking Created',
+              body: `Your booking at ${propertyDetails.name} is confirmed!`
+            },
+            data: {
+              type: 'booking_created',
+              bookingId: booking._id.toString(),
+              propertyName: propertyDetails.name,
+              checkIn: formattedCheckIn,
+              checkOut: formattedCheckOut
+            }
+          });
+        }
+        console.log(`📢 Notifications sent to guest (${guest.fcmTokens.length} devices)`);
+      }
+    } catch (notifError) {
+      console.log('⚠️ Error sending guest notifications:', notifError.message);
+    }
+
+    // Send Firebase notifications to host
+    try {
+      const host = await User.findById(propertyDetails.host._id);
+      if (host && host.fcmTokens && host.fcmTokens.length > 0) {
+        for (const token of host.fcmTokens) {
+          await admin.messaging().sendToDevice(token, {
+            notification: {
+              title: '🏠 New Booking!',
+              body: `New booking for ${propertyDetails.name}`
+            },
+            data: {
+              type: 'booking_created',
+              bookingId: booking._id.toString(),
+              propertyName: propertyDetails.name,
+              guestName: guest.fullName
+            }
+          });
+        }
+        console.log(`📢 Notifications sent to host (${host.fcmTokens.length} devices)`);
+      }
+    } catch (notifError) {
+      console.log('⚠️ Error sending host notifications:', notifError.message);
+    }
     try {
       console.log("HOST ID:", property.host);
 

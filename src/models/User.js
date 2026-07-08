@@ -27,12 +27,7 @@ const userSchema = new mongoose.Schema({
   hostFreeUntil: {
     type: Date
   },
-
-  fcmToken: {
-    type: String,
-    default: null,
-    sparse: true
-  },
+  
   fcmTokens: [{
     type: String
   }],
@@ -67,6 +62,5 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   }
 });
-
 
 module.exports = mongoose.model("User", userSchema);

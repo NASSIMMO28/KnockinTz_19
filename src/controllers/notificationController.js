@@ -1,5 +1,5 @@
   const Notification = require("../models/Notification");
-const { sendPushNotification } = require("../services/firebaseService");
+
   const User = require("../models/User");
 // Get all notifications for user
 exports.getNotifications = async (req, res) => {

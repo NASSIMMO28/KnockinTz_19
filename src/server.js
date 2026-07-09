@@ -6,12 +6,14 @@ const path = require("path");
 const cors = require("cors");
 const helmet = require('helmet');
 
-// ✅ Destructure the exact methods required directly from the package
-const { initializeApp, credential } = require('firebase-admin');
+// ✅ This safely grabs the methods whether firebase-admin maps to default or root exports
+const firebaseAdminPkg = require('firebase-admin');
+const adminInstance = firebaseAdminPkg.default || firebaseAdminPkg;
+const { initializeApp, credential } = adminInstance;
 
 const app = express();
 
-// Initialize Firebase Admin cleanly
+// Initialize Firebase Admin
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 initializeApp({
   credential: credential.cert(serviceAccount)

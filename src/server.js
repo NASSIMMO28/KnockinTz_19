@@ -6,15 +6,15 @@ const path = require("path");
 const cors = require("cors");
 const helmet = require('helmet');
 
-// ✅ Fixed the Firebase Admin import to prevent 'undefined' wrapper errors
-const admin = require('firebase-admin').default || require('firebase-admin');
+// ✅ Destructure the exact methods required directly from the package
+const { initializeApp, credential } = require('firebase-admin');
 
 const app = express();
 
-// Initialize Firebase Admin
+// Initialize Firebase Admin cleanly
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+initializeApp({
+  credential: credential.cert(serviceAccount)
 });
 
 // ⭐ CORS MUST BE FIRST

@@ -5,9 +5,11 @@ const mongoose = require("mongoose");
 const path = require("path");
 const cors = require("cors");
 const helmet = require('helmet');
-const admin = require('firebase-admin');
-const app = express();
 
+// ✅ Fixed the Firebase Admin import to prevent 'undefined' wrapper errors
+const admin = require('firebase-admin').default || require('firebase-admin');
+
+const app = express();
 
 // Initialize Firebase Admin
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);

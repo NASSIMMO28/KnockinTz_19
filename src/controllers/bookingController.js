@@ -131,8 +131,9 @@ await booking.save();
         console.log(`📢 Notifications sent to guest (${guest.fcmTokens.length} devices)`);
       }
     } catch (notifError) {
-      console.log('⚠️ Error sending guest notifications:', notifError.message);
-    }
+  console.error('❌ NOTIFICATION ERROR:', notifError);
+  console.error('Stack:', notifError.stack);
+}
 
     // Send Firebase notifications to host
     try {

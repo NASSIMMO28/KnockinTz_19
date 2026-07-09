@@ -91,12 +91,9 @@ exports.createBooking = async (req, res) => {
 
     await booking.save();
 
-await booking.save();
-
     // Get property details for notification
     const propertyDetails = await Property.findById(propertyId).populate('host');
     
-    // Format dates
     // Format dates for notification
     const formattedCheckIn = new Date(checkInDate).toLocaleDateString('en-US', {
       month: 'short',
@@ -114,7 +111,8 @@ await booking.save();
       const guest = await User.findById(req.user.id);
       if (guest && guest.fcmTokens && guest.fcmTokens.length > 0) {
         for (const token of guest.fcmTokens) {
-          await admin.messaging().sendToDevice(token, {
+          await admin.messaging().send({
+            token: token,
             notification: {
               title: '✅ Booking Created',
               body: `Your booking at ${propertyDetails.name} is confirmed!`
@@ -131,16 +129,17 @@ await booking.save();
         console.log(`📢 Notifications sent to guest (${guest.fcmTokens.length} devices)`);
       }
     } catch (notifError) {
-  console.error('❌ NOTIFICATION ERROR:', notifError);
-  console.error('Stack:', notifError.stack);
-}
+      console.error('❌ NOTIFICATION ERROR (guest):', notifError.message);
+      console.error('Stack:', notifError.stack);
+    }
 
     // Send Firebase notifications to host
     try {
       const host = await User.findById(propertyDetails.host._id);
       if (host && host.fcmTokens && host.fcmTokens.length > 0) {
         for (const token of host.fcmTokens) {
-          await admin.messaging().sendToDevice(token, {
+          await admin.messaging().send({
+            token: token,
             notification: {
               title: '🏠 New Booking!',
               body: `New booking for ${propertyDetails.name}`
@@ -156,15 +155,18 @@ await booking.save();
         console.log(`📢 Notifications sent to host (${host.fcmTokens.length} devices)`);
       }
     } catch (notifError) {
-      console.log('⚠️ Error sending host notifications:', notifError.message);
+      console.error('❌ NOTIFICATION ERROR (host):', notifError.message);
+      console.error('Stack:', notifError.stack);
     }
+
+    // Keep your existing database notifications
     try {
-      console.log("HOST ID:", property.host);
+      console.log("HOST ID:", propertyDetails.host);
 
       const notification = await Notification.create({
-        recipient: property.host,
+        recipient: propertyDetails.host,
         title: "New Booking",
-        message: `A new booking was made for ${property.title}`
+        message: `A new booking was made for ${propertyDetails.name}`
       });
 
       console.log("HOST NOTIFICATION SAVED:", notification._id);
@@ -176,7 +178,7 @@ await booking.save();
         const adminNotification = await Notification.create({
           recipient: admin._id,
           title: "New Booking",
-          message: `A new booking was made for ${property.title}`
+          message: `A new booking was made for ${propertyDetails.name}`
         });
 
         console.log("ADMIN NOTIFICATION SAVED:", adminNotification._id);

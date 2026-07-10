@@ -6,10 +6,11 @@ const path = require("path");
 const cors = require("cors");
 const helmet = require('helmet');
 
-
+const app = express();
 
 // ⭐ CORS MUST BE FIRST
 app.use(cors({
+
   origin: function(origin, callback) {
     const allowed = [
       "http://localhost:5173",

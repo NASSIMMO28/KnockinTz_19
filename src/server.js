@@ -8,6 +8,24 @@ const helmet = require('helmet');
 
 const app = express();
 
+const admin = require('firebase-admin');
+
+// Initialize Firebase Admin (only if env var exists)
+if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('✅ Firebase Admin initialized successfully');
+  } catch (firebaseError) {
+    console.error('❌ Firebase initialization failed:', firebaseError.message);
+    console.error('Stack:', firebaseError.stack);
+  }
+} else {
+  console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT_KEY environment variable not set - notifications will be disabled');
+}
+
 // ⭐ CORS MUST BE FIRST
 app.use(cors({
 

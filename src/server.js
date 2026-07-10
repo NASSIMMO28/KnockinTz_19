@@ -7,15 +7,11 @@ const cors = require("cors");
 const helmet = require('helmet');
 
 // ✅ This safely grabs the methods whether firebase-admin maps to default or root exports
-const firebaseAdminPkg = require('firebase-admin');
-const adminInstance = firebaseAdminPkg.default || firebaseAdminPkg;
-const { initializeApp, credential } = adminInstance;
-
-const app = express();
+const admin = require('firebase-admin');
 
 // Initialize Firebase Admin
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-initializeApp({
+admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 

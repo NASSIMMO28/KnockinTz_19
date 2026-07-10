@@ -16,7 +16,7 @@ const app = express();
 // Initialize Firebase Admin
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 initializeApp({
-  credential: credential.cert(serviceAccount)
+  credential: admin.credential.cert(serviceAccount)
 });
 
 // ⭐ CORS MUST BE FIRST

@@ -62,20 +62,35 @@ exports.createBooking = async (req, res) => {
     }
 
     const nights = Math.ceil(
-      (checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)
-    );
+  (checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)
+);
 
-    if (nights < 1) {
-      return res.status(400).json({
-        message: "Minimum booking is 1 night"
-      });
-    }
+if (nights < 1) {
+  return res.status(400).json({
+    message: "Minimum booking is 1 night"
+  });
+}
 
-    const price = property.pricePerNight * nights;
-    const guestFee = price * 0.05;
-    const totalPrice = price;
-    const grandTotal = price + guestFee;
-    const hostFee = price * 0.05;
+const pricePerNight = property.pricePerNight;
+const price = pricePerNight * nights; // Total booking subtotal
+
+// Calculate guest fee based on ONE NIGHT PRICE ONLY with tiering
+let guestFee;
+if (pricePerNight >= 50000 && pricePerNight < 100000) {
+  guestFee = Math.round((pricePerNight * 0.005) + 1000); // 0.5% + 1,000
+} else if (pricePerNight >= 100000 && pricePerNight < 500000) {
+  guestFee = Math.round((pricePerNight * 0.01) + 1500); // 1% + 1,500
+} else if (pricePerNight >= 500000) {
+  guestFee = Math.round((pricePerNight * 0.01) + 3000); // 1% + 3,000
+} else {
+  guestFee = 0; // Properties below 50k have no fee
+}
+
+const totalPrice = price;
+const grandTotal = price + guestFee;
+
+// Host commission is NOW deducted during withdrawal, not at booking
+// So we remove hostFee from here and calculate it when host withdraws
 
     const booking = new Booking({
       property: propertyId,
@@ -188,14 +203,15 @@ exports.createBooking = async (req, res) => {
     }
 
     return res.json({
-      message: "Booking successful",
-      nights,
-      price,
-      guestFee,
-      hostFee,
-      totalPrice,
-      booking
-    });
+  message: "Booking successful",
+  nights,
+  pricePerNight,
+  price,
+  guestFee,
+  totalPrice,
+  grandTotal,
+  booking
+});
   } catch (error) {
     console.error("❌ CREATE BOOKING ERROR:", error);
     console.error("❌ Error message:", error.message);

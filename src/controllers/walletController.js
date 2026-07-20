@@ -45,7 +45,6 @@ exports.getTransactions = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 // ================================
 // REQUEST WITHDRAWAL
 // ================================
@@ -87,11 +86,37 @@ exports.requestWithdrawal = async (req, res) => {
       });
     }
 
+    // Calculate host commission based on WITHDRAWAL AMOUNT with tiering
+    let commissionRate;
+    let commissionDescription;
+    
+    if (amount >= 50000 && amount < 300000) {
+      commissionRate = 0.03; // 3%
+      commissionDescription = "3%";
+    } else if (amount >= 300000 && amount < 1000000) {
+      commissionRate = 0.04; // 4%
+      commissionDescription = "4%";
+    } else if (amount >= 1000000) {
+      commissionRate = 0.05; // 5%
+      commissionDescription = "5%";
+    } else {
+      commissionRate = 0;
+      commissionDescription = "No commission";
+    }
+
+    const commission = Math.round(amount * commissionRate);
+    const netAmount = amount - commission;
+
+    console.log(`💰 Withdrawal: ${amount} | Commission: ${commission} (${commissionDescription}) | Net: ${netAmount}`);
+
     // create request
     const request = await WithdrawalRequest.create({
       host: req.user.id,
       wallet: wallet._id,
       amount,
+      commission,
+      netAmount,
+      commissionRate: commissionDescription,
       method,
       accountName,
       accountNumber,
@@ -100,21 +125,40 @@ exports.requestWithdrawal = async (req, res) => {
       note
     });
 
-    // log transaction
+    // log transaction for gross amount
     await WalletTransaction.create({
       wallet: wallet._id,
       host: req.user.id,
       type: "withdrawal_request",
       amount: -amount,
       balanceBefore: wallet.availableBalance,
-      balanceAfter: wallet.availableBalance,
+      balanceAfter: wallet.availableBalance - amount,
       description: `Withdrawal request of TZS ${amount.toLocaleString()}`,
       status: "pending",
       reference: request._id.toString()
     });
 
+    // log commission separately
+    if (commission > 0) {
+      await WalletTransaction.create({
+        wallet: wallet._id,
+        host: req.user.id,
+        type: "withdrawal_commission",
+        amount: -commission,
+        balanceBefore: wallet.availableBalance - amount,
+        balanceAfter: wallet.availableBalance - amount - commission,
+        description: `Host commission (${commissionDescription}) on withdrawal: TZS ${commission.toLocaleString()}`,
+        status: "pending",
+        reference: request._id.toString()
+      });
+    }
+
     res.json({
       message: "Withdrawal request submitted successfully!",
+      amount,
+      commission,
+      commissionRate: commissionDescription,
+      netAmount,
       request
     });
 

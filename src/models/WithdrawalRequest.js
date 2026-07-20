@@ -51,7 +51,10 @@ const withdrawalRequestSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  commission: { type: Number, default: 0 },
+  netAmount: { type: Number }, // What host actually receives
+  commissionRate: { type: String } // e.g., "3%", "4%", "5%"
 });
 
 module.exports = mongoose.model("WithdrawalRequest", withdrawalRequestSchema);

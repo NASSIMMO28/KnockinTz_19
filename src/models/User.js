@@ -27,7 +27,14 @@ const userSchema = new mongoose.Schema({
   hostFreeUntil: {
     type: Date
   },
-  
+  resetToken: {
+    type: String,
+    default: null
+  },
+  resetTokenExpiry: {
+    type: Date,
+    default: null
+  },
   fcmTokens: [{
     type: String
   }],

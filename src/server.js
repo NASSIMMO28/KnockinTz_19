@@ -77,6 +77,7 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const walletRoutes = require("./routes/walletRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const passwordResetRoutes = require("./routes/passwordResetRoutes");
 
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/payment", paymentRoutes);
@@ -89,6 +90,7 @@ app.use("/api/host", hostRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/password", passwordResetRoutes);
 
 // ======================
 // TEST ROUTE

@@ -20,6 +20,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.0",
     "multer": "^2.1.1",
+    "nodemailer": "^9.0.3",
     "onesignal-node": "^3.4.0",
     "pesapal-v3-node": "^1.2.1"
   },

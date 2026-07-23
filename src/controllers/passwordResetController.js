@@ -1,12 +1,8 @@
-const nodemailer = require("nodemailer");
+const crypto = require("crypto");
+const sgMail = require("@sendgrid/mail");
+const User = require("../models/User");
 
-const transporter = nodemailer.createTransport({
-  service: 'SendGrid',
-  auth: {
-    user: 'apikey',
-    pass: process.env.SENDGRID_API_KEY,
-  },
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 // ================================
 // REQUEST PASSWORD RESET
 // ================================
@@ -80,7 +76,7 @@ exports.requestPasswordReset = async (req, res) => {
       <p style="color: #999; font-size: 11px;">KNOCKIN Team</p>
     </div>
   `,
-};s
+};
 
 await sgMail.send(msg);
 

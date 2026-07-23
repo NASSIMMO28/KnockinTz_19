@@ -11,6 +11,7 @@ const transporter = nodemailer.createTransport({
 // REQUEST PASSWORD RESET
 // ================================
 exports.requestPasswordReset = async (req, res) => {
+  console.log('🔐 PASSWORD RESET REQUEST RECEIVED:', { email: req.body.email });
   try {
     const { email } = req.body;
 

@@ -1,8 +1,14 @@
 const crypto = require("crypto");
-const sgMail = require("@sendgrid/mail");
+const nodemailer = require("nodemailer");
 const User = require("../models/User");
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const transporter = nodemailer.createTransport({
+  service: "SendGrid",
+  auth: {
+    user: "apikey",
+    pass: process.env.SENDGRID_API_KEY,
+  },
+});
 // ================================
 // REQUEST PASSWORD RESET
 // ================================
@@ -59,33 +65,15 @@ exports.requestPasswordReset = async (req, res) => {
       `,
     };
 
-    const msg = {
-  to: email,
-  from: 'noreply@knockin.tz', // Use any email - SendGrid handles it
-  subject: 'KNOCKIN - Password Reset Request',
-  html: `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #d4af37;">Password Reset Request</h2>
-      <p>Hi ${user.fullName},</p>
-      <p>We received a request to reset your password. Click the link below to create a new password:</p>
-      <a href="${resetLink}" style="display: inline-block; padding: 12px 24px; background-color: #d4af37; color: #000; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset Password</a>
-      <p style="margin-top: 20px; color: #666; font-size: 12px;">
-        This link will expire in 30 minutes.<br>
-        If you didn't request this, ignore this email.
-      </p>
-      <p style="color: #999; font-size: 11px;">KNOCKIN Team</p>
-    </div>
-  `,
-};
+    const result = await transporter.sendMail(mailOptions);
+    console.log("✅ EMAIL SENT SUCCESSFULLY:", result.messageId);
 
-await sgMail.send(msg);
-
-    res.json({
+    return res.json({
       message: "If email exists, reset link has been sent"
     });
-
   } catch (error) {
-    console.error("Password reset error:", error);
+    console.error("❌ EMAIL SEND FAILED:", error.message);
+    console.error("Full error:", error);
     res.status(500).json({ message: error.message });
   }
 };

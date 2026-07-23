@@ -1,6 +1,12 @@
-const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const nodemailer = require("nodemailer");
 
+const transporter = nodemailer.createTransport({
+  service: 'SendGrid',
+  auth: {
+    user: 'apikey',
+    pass: process.env.SENDGRID_API_KEY,
+  },
+});
 // ================================
 // REQUEST PASSWORD RESET
 // ================================

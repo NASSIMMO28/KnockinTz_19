@@ -1,14 +1,10 @@
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
 const User = require("../models/User");
 
-const transporter = nodemailer.createTransport({
-  service: "SendGrid",
-  auth: {
-    user: "apikey",
-    pass: process.env.SENDGRID_API_KEY,
-  },
-});
+// Initialize SendGrid with API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 // ================================
 // REQUEST PASSWORD RESET
 // ================================
@@ -24,7 +20,6 @@ exports.requestPasswordReset = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      // Don't reveal if email exists (security)
       return res.status(200).json({
         message: "If email exists, reset link has been sent"
       });
@@ -43,11 +38,12 @@ exports.requestPasswordReset = async (req, res) => {
     user.resetTokenExpiry = resetTokenExpiry;
     await user.save();
 
-    // Send email
+    // Send email via SendGrid HTTP API
     const resetLink = `https://knockin-frontend-71vx.vercel.app/reset-password?token=${resetToken}`;
 
-    const mailOptions = {
-      from: process.env.GMAIL_USER,
+    const msg = {
+      // ⚠️ IMPORTANT: This MUST be a verified Single Sender email or custom domain email in SendGrid!
+      from: process.env.SENDGRID_VERIFIED_SENDER, 
       to: email,
       subject: "KNOCKIN - Password Reset Request",
       html: `
@@ -65,16 +61,19 @@ exports.requestPasswordReset = async (req, res) => {
       `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    console.log("✅ EMAIL SENT SUCCESSFULLY:", result.messageId);
+    await sgMail.send(msg);
+    console.log("✅ EMAIL SENT SUCCESSFULLY via SendGrid API");
 
     return res.json({
       message: "If email exists, reset link has been sent"
     });
   } catch (error) {
+    // Detailed SendGrid API Error Logging
     console.error("❌ EMAIL SEND FAILED:", error.message);
-    console.error("Full error:", error);
-    res.status(500).json({ message: error.message });
+    if (error.response) {
+      console.error("SendGrid API Response Errors:", error.response.body.errors);
+    }
+    res.status(500).json({ message: "Failed to send reset email" });
   }
 };
 

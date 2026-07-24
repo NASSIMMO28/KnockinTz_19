@@ -90,7 +90,7 @@ app.use("/api/host", hostRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/password", passwordResetRoutes);
+router.post("/request", requestPasswordReset);
 
 // ======================
 // TEST ROUTE
@@ -99,6 +99,9 @@ app.get("/", (req, res) => {
   res.send("KNOCK-IN API running...");
 });
 
+app.post("/api/password-test", (req, res) => {
+  res.json({ message: "Password route test working!" });
+});
 // ======================
 // ❌ NOT FOUND HANDLER
 // ======================

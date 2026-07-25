@@ -7,6 +7,67 @@ const { scheduleAutoPayout } = require("../services/payoutService");
 const Notification = require("../models/Notification");
 const admin = require('firebase-admin');
 
+
+async function sendPushNotification(userId, title, body, data = {}) {
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      console.log(`❌ User ${userId} not found`);
+      return false;
+    }
+
+    if (!user.fcmTokens || user.fcmTokens.length === 0) {
+      console.log(`⚠️ User ${userId} has no FCM tokens`);
+      return false;
+    }
+
+    console.log(`📱 Sending notification to ${user.fcmTokens.length} device(s)`);
+
+    for (const token of user.fcmTokens) {
+      try {
+        const response = await admin.messaging().send({
+          token,
+          notification: {
+            title,
+            body
+          },
+          data: Object.fromEntries(
+            Object.entries(data).map(([key, value]) => [
+              key,
+              String(value)
+            ])
+          )
+        });
+
+        console.log("✅ Notification sent:", response);
+
+      } catch (err) {
+        console.error("❌ Failed token:", token);
+        console.error(err.code);
+        console.error(err.message);
+
+        if (
+          err.code === "messaging/registration-token-not-registered" ||
+          err.code === "messaging/invalid-registration-token"
+        ) {
+          user.fcmTokens = user.fcmTokens.filter(t => t !== token);
+        }
+      }
+    }
+
+    user.fcmToken = user.fcmTokens[0] || null;
+    await user.save();
+
+    return true;
+
+  } catch (err) {
+    console.error("❌ sendPushNotification()");
+    console.error(err);
+    return false;
+  }
+}
+
 // ================================
 // CREATE BOOKING
 // ================================
@@ -121,58 +182,43 @@ const grandTotal = price + guestFee;
       year: 'numeric'
     });
 
+    const guest = await User.findById(req.user.id);
     // Send Firebase notifications to guest
     try {
-      const guest = await User.findById(req.user.id);
-      if (guest && guest.fcmTokens && guest.fcmTokens.length > 0) {
-        for (const token of guest.fcmTokens) {
-          await admin.messaging().send({
-            token: token,
-            notification: {
-              title: '✅ Booking Created',
-              body: `Your booking at ${propertyDetails.name} is confirmed!`
-            },
-            data: {
-              type: 'booking_created',
-              bookingId: booking._id.toString(),
-              propertyName: propertyDetails.name,
-              checkIn: formattedCheckIn,
-              checkOut: formattedCheckOut
-            }
-          });
-        }
-        console.log(`📢 Notifications sent to guest (${guest.fcmTokens.length} devices)`);
-      }
-    } catch (notifError) {
-      console.error('❌ NOTIFICATION ERROR (guest):', notifError.message);
-      console.error('Stack:', notifError.stack);
+  await sendPushNotification(
+    req.user.id,
+    "✅ Booking Created",
+    `Your booking at ${propertyDetails.name} is confirmed!`,
+    {
+      type: "booking_created",
+      bookingId: booking._id,
+      propertyName: propertyDetails.name,
+      checkIn: formattedCheckIn,
+      checkOut: formattedCheckOut
     }
+  );
+} catch (err) {
+  console.error("Guest notification failed");
+  console.error(err);
+}
 
     // Send Firebase notifications to host
     try {
-      const host = await User.findById(propertyDetails.host._id);
-      if (host && host.fcmTokens && host.fcmTokens.length > 0) {
-        for (const token of host.fcmTokens) {
-          await admin.messaging().send({
-            token: token,
-            notification: {
-              title: '🏠 New Booking!',
-              body: `New booking for ${propertyDetails.name}`
-            },
-            data: {
-              type: 'booking_created',
-              bookingId: booking._id.toString(),
-              propertyName: propertyDetails.name,
-              guestName: guest.fullName
-            }
-          });
-        }
-        console.log(`📢 Notifications sent to host (${host.fcmTokens.length} devices)`);
-      }
-    } catch (notifError) {
-      console.error('❌ NOTIFICATION ERROR (host):', notifError.message);
-      console.error('Stack:', notifError.stack);
+  await sendPushNotification(
+    propertyDetails.host._id,
+    "🏠 New Booking!",
+    `New booking for ${propertyDetails.name}`,
+    {
+      type: "booking_created",
+      bookingId: booking._id,
+      propertyName: propertyDetails.name,
+      guestName: guest.fullName
     }
+  );
+} catch (err) {
+  console.error("Host notification failed");
+  console.error(err);
+}
 
     // Keep your existing database notifications
     try {

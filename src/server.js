@@ -8,27 +8,31 @@ const helmet = require('helmet');
 
 const app = express();
 
-const admin = require('firebase-admin');
+const admin = require("firebase-admin");
+console.log("Firebase Admin:", admin);
+console.log("Credential:", admin.credential);
+console.log("Version:", require("firebase-admin/package.json").version);
 
-// Initialize Firebase Admin (only if env var exists)
-if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-  try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    console.log('✅ Firebase Admin initialized successfully');
-  } catch (firebaseError) {
-    console.error('❌ Firebase initialization failed:', firebaseError.message);
-    console.error('Stack:', firebaseError.stack);
-  }
-} else {
-  console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT_KEY environment variable not set - notifications will be disabled');
+try {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      type: process.env.FIREBASE_TYPE,
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      clientId: process.env.FIREBASE_CLIENT_ID,
+    }),
+  });
+
+  console.log("✅ Firebase Admin initialized successfully");
+} catch (err) {
+  console.error("❌ Firebase Admin initialization failed:");
+  console.error(err);
 }
 
 // ⭐ CORS MUST BE FIRST
 app.use(cors({
-
   origin: function(origin, callback) {
     const allowed = [
       "http://localhost:5173",
@@ -90,8 +94,7 @@ app.use("/api/host", hostRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/notifications", notificationRoutes);
-router.post("/request", requestPasswordReset);
-
+app.use("/api/password", passwordResetRoutes); // ✅ FIXED MOUNT POINT
 // ======================
 // TEST ROUTE
 // ======================
@@ -99,9 +102,6 @@ app.get("/", (req, res) => {
   res.send("KNOCK-IN API running...");
 });
 
-app.post("/api/password-test", (req, res) => {
-  res.json({ message: "Password route test working!" });
-});
 // ======================
 // ❌ NOT FOUND HANDLER
 // ======================

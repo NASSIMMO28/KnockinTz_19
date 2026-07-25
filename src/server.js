@@ -8,14 +8,17 @@ const helmet = require('helmet');
 
 const app = express();
 
-const admin = require("firebase-admin");
+const admin = require("firebase-admin/app");
+const { getMessaging } = require("firebase-admin/messaging");
+const { cert } = require("firebase-admin/app");
+
 console.log("Firebase Admin:", admin);
 console.log("Credential:", admin.credential);
-console.log("Version:", require("firebase-admin/package.json").version);
+
 
 try {
   admin.initializeApp({
-    credential: admin.credential.cert({
+  credential: cert({
       type: process.env.FIREBASE_TYPE,
       projectId: process.env.FIREBASE_PROJECT_ID,
       privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID,

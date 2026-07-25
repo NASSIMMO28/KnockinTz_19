@@ -5,7 +5,7 @@ const User = require("../models/User");
 const { calculateRefund, processRefund } = require("../services/refundService");
 const { scheduleAutoPayout } = require("../services/payoutService");
 const Notification = require("../models/Notification");
-const admin = require('firebase-admin');
+const { getMessaging } = require("firebase-admin/messaging");
 
 
 async function sendPushNotification(userId, title, body, data = {}) {
@@ -26,7 +26,7 @@ async function sendPushNotification(userId, title, body, data = {}) {
 
     for (const token of user.fcmTokens) {
       try {
-        const response = await admin.messaging().send({
+        const response = await getMessaging().send({
           token,
           notification: {
             title,

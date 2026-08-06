@@ -6,7 +6,7 @@ const { calculateRefund, processRefund } = require("../services/refundService");
 const { scheduleAutoPayout } = require("../services/payoutService");
 const Notification = require("../models/Notification");
 const { getMessaging } = require("firebase-admin/messaging");
-
+const NotificationService = require("../services/notificationService");
 
 async function sendPushNotification(userId, title, body, data = {}) {
   try {
@@ -74,6 +74,21 @@ async function sendPushNotification(userId, title, body, data = {}) {
 exports.createBooking = async (req, res) => {
   try {
     const { propertyId, checkIn, checkOut } = req.body;
+try {
+  await NotificationService.sendToUser(
+    req.user.id,
+    "Notification Test",
+    "NotificationService is working correctly.",
+    {
+      bookingId: booking._id,
+    },
+    "test"
+  );
+
+  console.log("✅ NotificationService test completed");
+} catch (err) {
+  console.error("❌ NotificationService test failed:", err);
+}
 
     if (!propertyId || !checkIn || !checkOut) {
       return res.status(400).json({

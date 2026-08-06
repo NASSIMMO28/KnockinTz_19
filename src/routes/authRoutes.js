@@ -15,19 +15,34 @@ const {
 
 // Update FCM token
 router.post('/fcm-token', protect, async (req, res) => {
+  console.log("====== FCM ROUTE ======");
+  console.log(req.body);
+
   try {
-    const { token } = req.body;
-    
-    if (!token) {
-      return res.status(400).json({ message: 'FCM token is required' });
+    const { fcmToken, platform } = req.body;
+
+    if (!fcmToken) {
+      return res.status(400).json({ message: "FCM token is required" });
     }
-    
-    // Add token to array if not already there
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $addToSet: { fcmTokens: token } },
-      { new: true }
-    );
+
+    // <-- I need everything from here to the closing });
+
+const user = await User.findByIdAndUpdate(
+  req.user.id,
+  {
+    $set: {
+      fcmToken: fcmToken,
+    },
+    $addToSet: {
+      fcmTokens: fcmToken,
+    },
+  },
+  { new: true }
+);
+
+console.log(
+  `✅ Saved ${platform || "unknown"} FCM token for user ${user._id}`
+);
     
     console.log(`✅ FCM token saved for user ${user._id}`);
     res.json({ message: 'FCM token updated' });

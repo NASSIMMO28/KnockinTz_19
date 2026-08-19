@@ -1,0 +1,91 @@
+[1mdiff --git a/src/controllers/bookingController.js b/src/controllers/bookingController.js[m
+[1mindex d957fbb1..52fbc814 100644[m
+[1m--- a/src/controllers/bookingController.js[m
+[1m+++ b/src/controllers/bookingController.js[m
+[36m@@ -6,7 +6,7 @@[m [mconst { calculateRefund, processRefund } = require("../services/refundService");[m
+ const { scheduleAutoPayout } = require("../services/payoutService");[m
+ const Notification = require("../models/Notification");[m
+ const { getMessaging } = require("firebase-admin/messaging");[m
+[31m-[m
+[32m+[m[32mconst NotificationService = require("../services/notificationService");[m
+ [m
+ async function sendPushNotification(userId, title, body, data = {}) {[m
+   try {[m
+[36m@@ -74,6 +74,21 @@[m [masync function sendPushNotification(userId, title, body, data = {}) {[m
+ exports.createBooking = async (req, res) => {[m
+   try {[m
+     const { propertyId, checkIn, checkOut } = req.body;[m
+[32m+[m[32mtry {[m
+[32m+[m[32m  await NotificationService.sendToUser([m
+[32m+[m[32m    req.user.id,[m
+[32m+[m[32m    "Notification Test",[m
+[32m+[m[32m    "NotificationService is working correctly.",[m
+[32m+[m[32m    {[m
+[32m+[m[32m      bookingId: booking._id,[m
+[32m+[m[32m    },[m
+[32m+[m[32m    "test"[m
+[32m+[m[32m  );[m
+[32m+[m
+[32m+[m[32m  console.log("✅ NotificationService test completed");[m
+[32m+[m[32m} catch (err) {[m
+[32m+[m[32m  console.error("❌ NotificationService test failed:", err);[m
+[32m+[m[32m}[m
+ [m
+     if (!propertyId || !checkIn || !checkOut) {[m
+       return res.status(400).json({[m
+[1mdiff --git a/src/routes/authRoutes.js b/src/routes/authRoutes.js[m
+[1mindex 0585869a..8e1f1eae 100644[m
+[1m--- a/src/routes/authRoutes.js[m
+[1m+++ b/src/routes/authRoutes.js[m
+[36m@@ -15,19 +15,31 @@[m [mconst {[m
+ [m
+ // Update FCM token[m
+ router.post('/fcm-token', protect, async (req, res) => {[m
+[32m+[m[32m  console.log("====== FCM ROUTE ======");[m
+[32m+[m[32m  console.log(req.body);[m
+   try {[m
+[31m-    const { token } = req.body;[m
+[31m-    [m
+[31m-    if (!token) {[m
+[31m-      return res.status(400).json({ message: 'FCM token is required' });[m
+[31m-    }[m
+[31m-    [m
+[31m-    // Add token to array if not already there[m
+[31m-    const user = await User.findByIdAndUpdate([m
+[31m-      req.user.id,[m
+[31m-      { $addToSet: { fcmTokens: token } },[m
+[31m-      { new: true }[m
+[31m-    );[m
+[32m+[m[32m    const { fcmToken, platform } = req.body;[m
+[32m+[m
+[32m+[m[32mif (!fcmToken) {[m
+[32m+[m[32m  return res.status(400).json({ message: "FCM token is required" });[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mconst user = await User.findByIdAndUpdate([m
+[32m+[m[32m  req.user.id,[m
+[32m+[m[32m  {[m
+[32m+[m[32m    $set: {[m
+[32m+[m[32m      fcmToken: fcmToken,[m
+[32m+[m[32m    },[m
+[32m+[m[32m    $addToSet: {[m
+[32m+[m[32m      fcmTokens: fcmToken,[m
+[32m+[m[32m    },[m
+[32m+[m[32m  },[m
+[32m+[m[32m  { new: true }[m
+[32m+[m[32m);[m
+[32m+[m
+[32m+[m[32mconsole.log([m
+[32m+[m[32m  `✅ Saved ${platform || "unknown"} FCM token for user ${user._id}`[m
+[32m+[m[32m);[m
+     [m
+     console.log(`✅ FCM token saved for user ${user._id}`);[m
+     res.json({ message: 'FCM token updated' });[m
+[1mdiff --git a/src/services/onesignalService.js b/src/services/onesignalService.js[m
+[1mdeleted file mode 100644[m
+[1mindex 29b553e0..00000000[m
+[1m--- a/src/services/onesignalService.js[m
+[1m+++ /dev/null[m
+[36m@@ -1 +0,0 @@[m
+[31m-importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');[m
+\ No newline at end of file[m

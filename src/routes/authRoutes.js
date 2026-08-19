@@ -13,42 +13,100 @@ const {
   updateProfile
 } = require("../controllers/authController");
 
-// Update FCM token
-router.post('/fcm-token', protect, async (req, res) => {
+javascript
+// ============================================================
+// UPDATE FCM TOKEN
+// ============================================================
+
+router.post("/fcm-token", protect, async (req, res) => {
   console.log("====== FCM ROUTE ======");
-  console.log(req.body);
+  console.log("BODY:", req.body);
+  console.log("USER:", req.user?.id);
 
   try {
     const { fcmToken, platform } = req.body;
 
-    if (!fcmToken) {
-      return res.status(400).json({ message: "FCM token is required" });
+    // ----------------------------------------------------------
+    // Validate token
+    // ----------------------------------------------------------
+
+    if (!fcmToken || typeof fcmToken !== "string") {
+      return res.status(400).json({
+        message: "FCM token is required",
+      });
     }
 
-    // <-- I need everything from here to the closing });
+    // ----------------------------------------------------------
+    // Find authenticated user
+    // ----------------------------------------------------------
 
-const user = await User.findByIdAndUpdate(
-  req.user.id,
-  {
-    $set: {
-      fcmToken: fcmToken,
-    },
-    $addToSet: {
-      fcmTokens: fcmToken,
-    },
-  },
-  { new: true }
-);
+    const user = await User.findById(req.user.id);
 
-console.log(
-  `✅ Saved ${platform || "unknown"} FCM token for user ${user._id}`
-);
-    
-    console.log(`✅ FCM token saved for user ${user._id}`);
-    res.json({ message: 'FCM token updated' });
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // ----------------------------------------------------------
+    // Save latest token
+    // ----------------------------------------------------------
+
+    user.fcmToken = fcmToken;
+
+    // ----------------------------------------------------------
+    // Keep token in token history/list
+    // ----------------------------------------------------------
+
+    if (!Array.isArray(user.fcmTokens)) {
+      user.fcmTokens = [];
+    }
+
+    if (!user.fcmTokens.includes(fcmToken)) {
+      user.fcmTokens.push(fcmToken);
+    }
+
+    await user.save();
+
+    // ----------------------------------------------------------
+    // Logs
+    // ----------------------------------------------------------
+
+    console.log(
+      `✅ Saved ${platform || "unknown"} FCM token`
+    );
+
+    console.log(
+      `👤 User: ${user.fullName}`
+    );
+
+    console.log(
+      `🆔 User ID: ${user._id}`
+    );
+
+    console.log(
+      `📱 Total FCM tokens: ${user.fcmTokens.length}`
+    );
+
+    // ----------------------------------------------------------
+    // Response
+    // ----------------------------------------------------------
+
+    return res.status(200).json({
+      message: "FCM token updated",
+      platform: platform || "unknown",
+    });
+
   } catch (error) {
-    console.error('❌ Error updating FCM token:', error);
-    res.status(500).json({ message: error.message });
+    console.error(
+      "❌ Error updating FCM token:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to update FCM token",
+      error: error.message,
+    });
   }
 });
 

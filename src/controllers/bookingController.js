@@ -198,16 +198,17 @@ const grandTotal = price + guestFee;
     });
 
     const guest = await User.findById(req.user.id);
+
     // Send Firebase notifications to guest
     try {
   await sendPushNotification(
     req.user.id,
     "✅ Booking Created",
-    `Your booking at ${propertyDetails.name} is confirmed!`,
+    `Your booking at ${propertyDetails.title} has been created successfully.`,
     {
       type: "booking_created",
       bookingId: booking._id,
-      propertyName: propertyDetails.name,
+      propertyName: propertyDetails.title,
       checkIn: formattedCheckIn,
       checkOut: formattedCheckOut
     }
@@ -222,11 +223,11 @@ const grandTotal = price + guestFee;
   await sendPushNotification(
     propertyDetails.host._id,
     "🏠 New Booking!",
-    `New booking for ${propertyDetails.name}`,
+    `New booking for ${propertyDetails.title}`,
     {
       type: "booking_created",
       bookingId: booking._id,
-      propertyName: propertyDetails.name,
+      propertyName: propertyDetails.title,
       guestName: guest.fullName
     }
   );
@@ -242,7 +243,7 @@ const grandTotal = price + guestFee;
       const notification = await Notification.create({
         recipient: propertyDetails.host,
         title: "New Booking",
-        message: `A new booking was made for ${propertyDetails.name}`
+        message: `A new booking was made for ${propertyDetails.title}`
       });
 
       console.log("HOST NOTIFICATION SAVED:", notification._id);

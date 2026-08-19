@@ -255,7 +255,7 @@ const grandTotal = price + guestFee;
         const adminNotification = await Notification.create({
           recipient: admin._id,
           title: "New Booking",
-          message: `A new booking was made for ${propertyDetails.name}`
+          message: `A new booking was made for ${propertyDetails.title}`
         });
 
         console.log("ADMIN NOTIFICATION SAVED:", adminNotification._id);

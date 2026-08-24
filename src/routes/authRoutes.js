@@ -13,7 +13,6 @@ const {
   updateProfile
 } = require("../controllers/authController");
 
-javascript
 // ============================================================
 // UPDATE FCM TOKEN
 // ============================================================

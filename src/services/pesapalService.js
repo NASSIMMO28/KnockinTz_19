@@ -67,29 +67,29 @@ const submitOrder = async ({ bookingId, amount, email, phone, firstName, lastNam
   const notificationId = process.env.PESAPAL_NOTIFICATION_ID;
 
   const res = await axios.post(
-    `https://pay.pesapal.com/v3/api/Transactions/SubmitOrderRequest`,
-    {
-      id: bookingId,
-      currency: "TZS",
-      amount,
-      description: `Knockin Booking #${bookingId}`,
-      callback_url: `${process.env.FRONTEND_URL}/booking/callback`,
-      notification_id: notificationId,
-      billing_address: {
-        email_address: email,
-        phone_number: phone,
-        first_name: firstName,
-        last_name: lastName
-      }
-    },
-    {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      }
+  `https://pay.pesapal.com/v3/api/Transactions/SubmitOrderRequest`,
+  {
+    id: bookingId,
+    currency: "TZS",
+    amount,
+    description: `Knockin Booking #${bookingId}`,
+    callback_url: `${process.env.FRONTEND_URL}/booking/callback?bookingId=${bookingId}`,
+    notification_id: notificationId,
+    billing_address: {
+      email_address: email,
+      phone_number: phone,
+      first_name: firstName,
+      last_name: lastName
     }
-  );
+  },
+  {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    }
+  }
+);
   return res.data;
 };
 

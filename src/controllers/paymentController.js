@@ -95,27 +95,103 @@ exports.verifyPayment = async (req, res) => {
   try {
     const { OrderTrackingId, OrderMerchantReference } = req.query;
 
+    console.log("========== VERIFY PAYMENT ==========");
+    console.log("OrderTrackingId:", OrderTrackingId);
+    console.log("OrderMerchantReference:", OrderMerchantReference);
+
+    if (!OrderTrackingId) {
+      return res.status(400).json({
+        message: "Missing Pesapal OrderTrackingId"
+      });
+    }
+
+    // Ask Pesapal for the real payment status
     const status = await getTransactionStatus(OrderTrackingId);
-    const booking = await Booking.findById(OrderMerchantReference);
 
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    console.log("Pesapal status:", status);
 
-    if (status.payment_status_description === "Completed" && booking.paymentStatus !== "paid") {
+    // Find booking using merchant reference first
+    let booking = null;
+
+    if (OrderMerchantReference) {
+      booking = await Booking.findById(OrderMerchantReference);
+    }
+
+    // Fallback: find booking using saved Pesapal tracking ID
+    if (!booking) {
+      booking = await Booking.findOne({
+        pesapalOrderId: OrderTrackingId
+      });
+    }
+
+    if (!booking) {
+      console.error("❌ Booking not found for payment:", OrderTrackingId);
+
+      return res.status(404).json({
+        message: "Booking not found",
+        orderTrackingId: OrderTrackingId
+      });
+    }
+
+    console.log("Booking found:", booking._id);
+    console.log("Current payment status:", booking.paymentStatus);
+    console.log("Pesapal payment status:", status.payment_status_description);
+
+    // ================================
+    // PAYMENT COMPLETED
+    // ================================
+    if (status.payment_status_description === "Completed") {
+
       booking.paymentStatus = "paid";
       booking.status = "confirmed";
       booking.pesapalTrackingId = OrderTrackingId;
       booking.transactionId = status.confirmation_code;
       booking.paymentMethod = "pesapal";
+
       await booking.save();
+
+      console.log(`✅ PAYMENT CONFIRMED: ${booking._id}`);
     }
 
-    res.json({
+    // ================================
+    // PAYMENT FAILED
+    // ================================
+    else if (
+      status.payment_status_description === "Failed" ||
+      status.payment_status_description === "Invalid"
+    ) {
+
+      booking.paymentStatus = "failed";
+
+      await booking.save();
+
+      console.log(`❌ PAYMENT FAILED: ${booking._id}`);
+    }
+
+    // ================================
+    // PAYMENT STILL PENDING
+    // ================================
+    else {
+
+      console.log(
+        `⏳ Payment still pending: ${status.payment_status_description}`
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
       paymentStatus: booking.paymentStatus,
       bookingStatus: booking.status,
+      bookingId: booking._id,
       booking
     });
 
   } catch (error) {
-    res.status(500).json({ message: error.message });
+
+    console.error("❌ VERIFY PAYMENT ERROR:", error);
+
+    return res.status(500).json({
+      message: error.message
+    });
   }
 };
